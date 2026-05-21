@@ -59,7 +59,7 @@ exports.getDashboard = async (req, res) => {
       `SELECT p.id, p.name, p.quantity, p.low_stock_threshold
        FROM products p
        WHERE p.quantity <= p.low_stock_threshold AND p.is_active = 1
-       ORDER BY p.quantity ASC LIMIT 10`
+       ORDER BY p.quantity ASC, (p.quantity / p.low_stock_threshold) ASC LIMIT 10`
     );
 
     const [[stockStats]] = await db.execute(

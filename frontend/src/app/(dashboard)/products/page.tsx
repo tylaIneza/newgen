@@ -173,7 +173,7 @@ export default function ProductsPage() {
       <div className="flex gap-4 text-sm text-gray-500">
         <span>{total} products total</span>
         <span>·</span>
-        <span className="text-amber-600">{products.filter(p => p.quantity <= p.low_stock_threshold).length} low stock</span>
+        <span className="text-amber-600">{products.filter(p => p.quantity > 0 && p.quantity <= p.low_stock_threshold).length} low stock</span>
         <span>·</span>
         <span className="text-red-600">{products.filter(p => p.quantity === 0).length} out of stock</span>
       </div>
@@ -197,8 +197,8 @@ export default function ProductsPage() {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {products.map(p => {
-                  const isLow = p.quantity <= p.low_stock_threshold;
                   const isOut = p.quantity === 0;
+                  const isLow = !isOut && p.quantity <= p.low_stock_threshold;
                   return (
                     <tr key={p.id} className="table-row">
                       <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{p.name}</td>

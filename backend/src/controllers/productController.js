@@ -11,7 +11,7 @@ exports.getAll = async (req, res) => {
       where.push('(p.name LIKE ? OR p.sku LIKE ? OR p.barcode LIKE ?)');
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
-    if (low_stock === 'true') { where.push('p.quantity <= p.low_stock_threshold'); }
+    if (low_stock === 'true') { where.push('p.quantity > 0 AND p.quantity <= p.low_stock_threshold'); }
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const whereStr = `WHERE ${where.join(' AND ')}`;
@@ -225,7 +225,7 @@ exports.importCSV = async (req, res) => {
 exports.getLowStock = async (req, res) => {
   const [products] = await db.execute(
     `SELECT p.* FROM products p
-     WHERE p.quantity <= p.low_stock_threshold AND p.is_active = 1
+     WHERE p.quantity > 0 AND p.quantity <= p.low_stock_threshold AND p.is_active = 1
      ORDER BY (p.quantity / p.low_stock_threshold) ASC`
   );
   res.json({ products });
