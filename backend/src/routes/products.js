@@ -1,0 +1,18 @@
+const router = require('express').Router();
+const multer = require('multer');
+const { authenticate, requirePermission } = require('../middleware/auth');
+const ctrl = require('../controllers/productController');
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
+
+router.use(authenticate);
+router.get('/low-stock', ctrl.getLowStock);
+router.get('/', ctrl.getAll);
+router.get('/:id', ctrl.getOne);
+router.post('/', requirePermission('can_manage_stock'), ctrl.create);
+router.post('/import', requirePermission('can_manage_stock'), upload.single('file'), ctrl.importCSV);
+router.put('/:id', requirePermission('can_manage_stock'), ctrl.update);
+router.post('/:id/stock', requirePermission('can_manage_stock'), ctrl.adjustStock);
+router.delete('/:id', requirePermission('can_manage_stock'), ctrl.remove);
+
+module.exports = router;
