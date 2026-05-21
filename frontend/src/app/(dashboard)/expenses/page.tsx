@@ -19,14 +19,12 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 
 
 type Tab = 'expenses' | 'approvals' | 'my-requests';
 
-const todayLocal = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
+const todayRwanda = () =>
+  new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
 
 const emptyForm = {
   title: '', amount: '', category_id: '',
-  expense_date: todayLocal(),
+  expense_date: '',
   description: '',
 };
 
@@ -112,7 +110,7 @@ export default function ExpensesPage() {
 
   // ── Handlers ─────────────────────────────────────────────
 
-  const openAdd = () => { setForm(emptyForm); setSelected(null); setModal('add'); };
+  const openAdd = () => { setForm({ ...emptyForm, expense_date: todayRwanda() }); setSelected(null); setModal('add'); };
 
   const openEdit = (e: Expense) => {
     setSelected(e);
@@ -129,7 +127,7 @@ export default function ExpensesPage() {
       return;
     }
     const expYear = parseInt(form.expense_date.slice(0, 4));
-    const thisYear = new Date().getFullYear();
+    const thisYear = parseInt(todayRwanda().slice(0, 4));
     if (expYear < thisYear - 1 || expYear > thisYear + 1) {
       toast.error(`Expense date looks wrong (${expYear}) — please check the date`);
       return;
