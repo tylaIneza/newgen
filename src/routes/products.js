@@ -3,7 +3,14 @@ const multer = require('multer');
 const { authenticate, requirePermission } = require('../middleware/auth');
 const ctrl = require('../controllers/productController');
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /\.(csv|xlsx|xls)$/i.test(file.originalname);
+    cb(ok ? null : new Error('Only CSV and Excel files are allowed'), ok);
+  },
+});
 
 router.use(authenticate);
 router.get('/low-stock', ctrl.getLowStock);

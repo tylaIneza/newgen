@@ -99,30 +99,35 @@ export default function ProductsPage() {
     } catch { toast.error('Failed to remove product'); }
   };
 
-  const downloadTemplate = () => {
-    const rows = [
-      'name,quantity,low_stock_threshold',
-      'Samsung Galaxy A55,20,5',
-      'iPhone 15 128GB,10,3',
-      'Tecno Spark 20 Pro,15,5',
-      'Samsung 55" QLED TV,4,2',
-      'LG 43" Full HD TV,6,2',
-      'HP Laptop 15s i5,8,2',
-      'Dell Inspiron 14 i3,5,2',
-      'JBL Charge 5 Speaker,12,3',
-      'Airpods Pro 2nd Gen,7,3',
-      'Samsung Galaxy Buds2,10,3',
-      'Anker PowerBank 20000mAh,20,5',
-      'USB-C Charging Cable 1m,50,10',
-      'iPhone Lightning Cable 1m,40,10',
-      'Screen Protector Samsung A55,30,10',
-      'Phone Case iPhone 15,25,10',
-      'Wireless Charger 15W,15,5',
-      'HDMI Cable 2m,25,5',
-      'Memory Card 128GB,30,10',
-      'Laptop Bag 15.6",12,3',
-    ];
-    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const sampleData = [
+    { name: 'Samsung Galaxy A55',        quantity: 20, low_stock_threshold: 5  },
+    { name: 'iPhone 15 128GB',           quantity: 10, low_stock_threshold: 3  },
+    { name: 'Tecno Spark 20 Pro',        quantity: 15, low_stock_threshold: 5  },
+    { name: 'Samsung 55" QLED TV',       quantity: 4,  low_stock_threshold: 2  },
+    { name: 'LG 43" Full HD TV',         quantity: 6,  low_stock_threshold: 2  },
+    { name: 'HP Laptop 15s i5',          quantity: 8,  low_stock_threshold: 2  },
+    { name: 'Dell Inspiron 14 i3',       quantity: 5,  low_stock_threshold: 2  },
+    { name: 'JBL Charge 5 Speaker',      quantity: 12, low_stock_threshold: 3  },
+    { name: 'Airpods Pro 2nd Gen',       quantity: 7,  low_stock_threshold: 3  },
+    { name: 'Anker PowerBank 20000mAh',  quantity: 20, low_stock_threshold: 5  },
+    { name: 'USB-C Charging Cable 1m',   quantity: 50, low_stock_threshold: 10 },
+    { name: 'Wireless Charger 15W',      quantity: 15, low_stock_threshold: 5  },
+    { name: 'HDMI Cable 2m',             quantity: 25, low_stock_threshold: 5  },
+    { name: 'Memory Card 128GB',         quantity: 30, low_stock_threshold: 10 },
+  ];
+
+  const downloadExcelTemplate = async () => {
+    const XLSX = await import('xlsx');
+    const ws = XLSX.utils.json_to_sheet(sampleData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Products');
+    XLSX.writeFile(wb, 'products_import_sample.xlsx');
+  };
+
+  const downloadCSVTemplate = () => {
+    const header = 'name,quantity,low_stock_threshold';
+    const rows = sampleData.map(r => `${r.name},${r.quantity},${r.low_stock_threshold}`);
+    const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = 'products_import_sample.csv'; a.click();
@@ -160,7 +165,7 @@ export default function ProductsPage() {
         {canManage && (
           <div className="flex gap-2">
             <button onClick={() => { setImportFile(null); setImportResult(null); setModal('import'); }} className="btn-secondary">
-              <Upload className="w-4 h-4" /> Import CSV
+              <Upload className="w-4 h-4" /> Import
             </button>
             <button onClick={openAdd} className="btn-primary">
               <Plus className="w-4 h-4" /> Add Product
@@ -319,11 +324,11 @@ export default function ProductsPage() {
         </div>
       </Modal>
 
-      {/* Import CSV Modal */}
+      {/* Import Modal */}
       <Modal
         open={modal === 'import'}
         onClose={() => setModal(null)}
-        title="Import Products from CSV"
+        title="Import Products"
         size="md"
         footer={
           <>
@@ -336,21 +341,27 @@ export default function ProductsPage() {
       >
         <div className="space-y-4">
           <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm">
-            <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">CSV Format</p>
-            <p className="text-blue-600 dark:text-blue-400 text-xs font-mono">name, quantity, low_stock_threshold</p>
+            <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">File Format</p>
+            <p className="text-blue-600 dark:text-blue-400 text-xs font-mono">name · quantity · low_stock_threshold</p>
             <p className="text-blue-500 dark:text-blue-400 text-xs mt-1">
-              Only <strong>name</strong> is required. Download the sample below — 20 electronics products ready to edit.
+              Supports <strong>.xlsx</strong> and <strong>.csv</strong>. Only <strong>name</strong> is required.
             </p>
-            <button onClick={downloadTemplate}
-              className="mt-2 flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-400 hover:underline">
-              <Download className="w-3.5 h-3.5" /> Download sample (20 products)
-            </button>
+            <div className="mt-2 flex gap-3">
+              <button onClick={downloadExcelTemplate}
+                className="flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-400 hover:underline">
+                <Download className="w-3.5 h-3.5" /> Download Excel sample
+              </button>
+              <button onClick={downloadCSVTemplate}
+                className="flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-400 hover:underline">
+                <Download className="w-3.5 h-3.5" /> Download CSV sample
+              </button>
+            </div>
           </div>
 
           <div>
-            <label className="label">Select CSV File</label>
+            <label className="label">Select File (.xlsx or .csv)</label>
             <input
-              type="file" accept=".csv,text/csv"
+              type="file" accept=".xlsx,.xls,.csv,text/csv"
               onChange={e => { setImportFile(e.target.files?.[0] || null); setImportResult(null); }}
               className="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 cursor-pointer"
             />

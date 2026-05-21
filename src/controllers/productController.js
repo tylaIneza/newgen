@@ -208,33 +208,47 @@ exports.adjustStock = async (req, res) => {
 exports.importCSV = async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-  const text  = req.file.buffer.toString('utf8');
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  if (lines.length < 2) return res.status(400).json({ error: 'File is empty or missing header row' });
+  const XLSX = require('xlsx');
+  const ext  = req.file.originalname.split('.').pop().toLowerCase();
 
-  const header  = lines[0].toLowerCase().split(',').map(h => h.trim());
-  const nameIdx = header.indexOf('name');
-  if (nameIdx === -1) return res.status(400).json({ error: 'CSV must have a "name" column' });
+  let rows; // array of plain objects with lowercased keys
 
-  const col = (row, key) => {
-    const i = header.indexOf(key);
-    return i === -1 ? '' : (row[i] || '').trim();
-  };
+  if (ext === 'xlsx' || ext === 'xls') {
+    const wb    = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const data  = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    if (!data.length) return res.status(400).json({ error: 'Spreadsheet is empty or missing header row' });
+    // Normalise keys to lowercase
+    rows = data.map(r =>
+      Object.fromEntries(Object.entries(r).map(([k, v]) => [k.toLowerCase().trim(), String(v).trim()]))
+    );
+  } else {
+    // CSV fallback
+    const lines = req.file.buffer.toString('utf8').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length < 2) return res.status(400).json({ error: 'File is empty or missing header row' });
+    const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+    rows = lines.slice(1).map(line => {
+      const cols = line.split(',');
+      return Object.fromEntries(header.map((h, i) => [h, (cols[i] || '').trim()]));
+    });
+  }
+
+  if (!('name' in rows[0])) return res.status(400).json({ error: 'File must have a "name" column' });
 
   let imported = 0;
   const errors = [];
 
-  for (let i = 1; i < lines.length; i++) {
-    const row  = lines[i].split(',');
-    const name = col(row, 'name');
-    if (!name) { errors.push(`Row ${i + 1}: name is required`); continue; }
+  for (let i = 0; i < rows.length; i++) {
+    const r    = rows[i];
+    const name = r['name'] || '';
+    if (!name) { errors.push(`Row ${i + 2}: name is required`); continue; }
 
-    const sku       = col(row, 'sku')                || null;
-    const barcode   = col(row, 'barcode')            || null;
-    const quantity  = parseInt(col(row, 'quantity')) || 0;
-    const threshold = parseInt(col(row, 'low_stock_threshold')) || 5;
-    const unit      = col(row, 'unit')               || 'piece';
-    const desc      = col(row, 'description')        || null;
+    const sku       = r['sku']                || null;
+    const barcode   = r['barcode']            || null;
+    const quantity  = parseInt(r['quantity']) || 0;
+    const threshold = parseInt(r['low_stock_threshold']) || 5;
+    const unit      = r['unit']               || 'piece';
+    const desc      = r['description']        || null;
 
     try {
       const product = await prisma.product.create({
@@ -249,21 +263,21 @@ exports.importCSV = async (req, res) => {
           data: {
             product_id: product.id, movement_type: 'IN',
             quantity, quantity_before: 0, quantity_after: quantity,
-            reference_type: 'INITIAL', performed_by: req.user.id, notes: 'CSV import',
+            reference_type: 'INITIAL', performed_by: req.user.id, notes: 'File import',
           },
         });
       }
       imported++;
     } catch (err) {
       if (err.code === 'P2002') {
-        errors.push(`Row ${i + 1} (${name}): SKU "${sku}" already exists — skipped`);
+        errors.push(`Row ${i + 2} (${name}): SKU "${sku}" already exists — skipped`);
       } else {
-        errors.push(`Row ${i + 1} (${name}): ${err.message}`);
+        errors.push(`Row ${i + 2} (${name}): ${err.message}`);
       }
     }
   }
 
-  res.json({ imported, errors, total: lines.length - 1 });
+  res.json({ imported, errors, total: rows.length });
 };
 
 exports.getLowStock = async (req, res) => {
