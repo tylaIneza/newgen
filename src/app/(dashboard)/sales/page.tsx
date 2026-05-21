@@ -98,6 +98,14 @@ export default function SalesPage() {
       setError(`Fill qty & price for: ${empty.map(e => e.product.name).join(', ')}`);
       return;
     }
+    const belowWholesale = cart.filter(c => {
+      const wholesale = c.product.wholesale_price ?? 0;
+      return wholesale > 0 && parseFloat(c.price) < wholesale;
+    });
+    if (belowWholesale.length) {
+      setError(`Price below wholesale for: ${belowWholesale.map(c => c.product.name).join(', ')}`);
+      return;
+    }
     setSaving(true); setError(''); setSuccess('');
     try {
       await salesApi.create({
@@ -344,17 +352,24 @@ export default function SalesPage() {
               ) : (
                 cart.map(item => {
                   const subtotal  = (parseFloat(item.price) || 0) * (parseInt(item.qty) || 0);
+                  const wholesale     = item.product.wholesale_price ?? 0;
+                  const priceVal      = parseFloat(item.price) || 0;
+                  const belowCost     = wholesale > 0 && priceVal > 0 && priceVal < wholesale;
+                  const profit        = priceVal > 0 && parseInt(item.qty) > 0
+                    ? (priceVal - wholesale) * parseInt(item.qty) : null;
+
                   return (
                     <div key={item.product.id} className="rounded-xl p-3 space-y-2.5"
                       style={{
-                        background: C.card,
-                        border: `1px solid ${C.border}`,
+                        background: belowCost ? 'rgba(239,68,68,0.06)' : C.card,
+                        border: `1px solid ${belowCost ? 'rgba(239,68,68,0.35)' : C.border}`,
                       }}>
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-white truncate">{item.product.name}</p>
                           <p className="text-[11px] mt-0.5" style={{ color: C.muted }}>
                             {item.product.quantity} in stock
+                            {wholesale > 0 && <span style={{ color: 'rgba(251,191,36,0.7)' }}> · wholesale: RWF {wholesale.toLocaleString()}</span>}
                           </p>
                         </div>
                         <button
@@ -381,13 +396,15 @@ export default function SalesPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] mb-1 font-medium" style={{ color: C.dim }}>Price</label>
+                          <label className="block text-[10px] mb-1 font-medium" style={{ color: belowCost ? '#f87171' : C.dim }}>
+                            Price {belowCost && '⚠ below wholesale'}
+                          </label>
                           <input
                             type="number" min="0" step="0.01"
-                            className="w-full text-right py-1.5 rounded-lg text-xs font-semibold text-white outline-none focus:ring-1 focus:ring-indigo-500/40"
+                            className="w-full text-right py-1.5 rounded-lg text-xs font-semibold text-white outline-none focus:ring-1"
                             style={{
-                              background: 'rgba(255,255,255,0.07)',
-                              border: `1px solid ${C.border}`,
+                              background: belowCost ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.07)',
+                              border: `1px solid ${belowCost ? 'rgba(239,68,68,0.5)' : C.border}`,
                             }}
                             value={item.price}
                             placeholder="0"
@@ -400,6 +417,14 @@ export default function SalesPage() {
                         <span style={{ color: C.muted }}>Subtotal</span>
                         <span className="font-black" style={{ color: '#818cf8' }}>{formatCurrency(subtotal)}</span>
                       </div>
+                      {profit !== null && wholesale > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span style={{ color: C.muted }}>Profit</span>
+                          <span className="font-semibold" style={{ color: profit >= 0 ? 'rgba(52,211,153,0.85)' : '#f87171' }}>
+                            {profit >= 0 ? '+' : ''}{formatCurrency(profit)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })

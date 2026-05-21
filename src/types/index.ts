@@ -17,6 +17,7 @@ export interface Product {
   sku?: string;
   barcode?: string;
   quantity: number;
+  wholesale_price: number;
   low_stock_threshold: number;
   unit?: string;
   description?: string;

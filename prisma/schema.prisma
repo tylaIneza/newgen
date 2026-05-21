@@ -90,6 +90,7 @@ model Product {
   sku                 String?  @unique @db.VarChar(100)
   barcode             String?  @db.VarChar(100)
   quantity            Int      @default(0)
+  wholesale_price     Decimal  @default(0) @db.Decimal(12, 2)
   low_stock_threshold Int      @default(5)
   unit                String?  @default("piece") @db.VarChar(50)
   description         String?  @db.Text
@@ -180,6 +181,7 @@ model SaleItem {
   product_name  String  @db.VarChar(200)
   quantity      Int
   selling_price Decimal @db.Decimal(12, 2)
+  cost_price    Decimal @default(0) @db.Decimal(12, 2)
   discount      Decimal @default(0) @db.Decimal(12, 2)
   line_total    Decimal @db.Decimal(12, 2)
 

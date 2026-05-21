@@ -75,7 +75,7 @@ exports.getOne = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { name, sku, barcode, quantity = 0, low_stock_threshold = 5, unit, description } = req.body;
+  const { name, sku, barcode, quantity = 0, wholesale_price = 0, low_stock_threshold = 5, unit, description } = req.body;
   if (!name) return res.status(400).json({ error: 'Product name is required' });
 
   try {
@@ -85,6 +85,7 @@ exports.create = async (req, res) => {
         sku:                 sku       || null,
         barcode:             barcode   || null,
         quantity:            parseInt(quantity),
+        wholesale_price:     parseFloat(wholesale_price) || 0,
         low_stock_threshold: parseInt(low_stock_threshold),
         unit:                unit      || 'piece',
         description:         description || null,
@@ -121,7 +122,7 @@ exports.create = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-  const { name, sku, barcode, low_stock_threshold, unit, description, is_active } = req.body;
+  const { name, sku, barcode, wholesale_price, low_stock_threshold, unit, description, is_active } = req.body;
   const id = parseInt(req.params.id);
 
   try {
@@ -134,6 +135,7 @@ exports.update = async (req, res) => {
         name:                name                !== undefined ? name                : old.name,
         sku:                 sku                 !== undefined ? sku                 : old.sku,
         barcode:             barcode             !== undefined ? barcode             : old.barcode,
+        wholesale_price:     wholesale_price     !== undefined ? parseFloat(wholesale_price) : old.wholesale_price,
         low_stock_threshold: low_stock_threshold !== undefined ? parseInt(low_stock_threshold) : old.low_stock_threshold,
         unit:                unit                || old.unit,
         description:         description         !== undefined ? description         : old.description,

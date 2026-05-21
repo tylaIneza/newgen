@@ -9,7 +9,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import toast from 'react-hot-toast';
 import { Plus, Search, Edit2, Trash2, Package, BarChart2, Upload, Download, CheckCircle, AlertCircle } from 'lucide-react';
 
-const emptyForm = { name: '', quantity: '', low_stock_threshold: '5' };
+const emptyForm = { name: '', quantity: '', wholesale_price: '', low_stock_threshold: '5' };
 
 export default function ProductsPage() {
   const { hasPermission } = useAuth();
@@ -50,7 +50,7 @@ export default function ProductsPage() {
   const openAdd = () => { setForm(emptyForm); setSelected(null); setModal('add'); };
   const openEdit = (p: Product) => {
     setSelected(p);
-    setForm({ name: p.name, quantity: String(p.quantity), low_stock_threshold: String(p.low_stock_threshold) });
+    setForm({ name: p.name, quantity: String(p.quantity), wholesale_price: String(p.wholesale_price ?? ''), low_stock_threshold: String(p.low_stock_threshold) });
     setModal('edit');
   };
   const openStock = (p: Product) => {
@@ -196,6 +196,7 @@ export default function ProductsPage() {
                 <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-gray-800">
                   <th className="text-left px-4 py-3 font-medium">Name</th>
                   <th className="text-center px-4 py-3 font-medium">Qty</th>
+                  <th className="text-right px-4 py-3 font-medium">Wholesale</th>
                   <th className="text-center px-4 py-3 font-medium">Low Stock</th>
                   {canManage && <th className="text-center px-4 py-3 font-medium">Actions</th>}
                 </tr>
@@ -211,6 +212,9 @@ export default function ProductsPage() {
                         <span className={`font-bold text-lg ${isOut ? 'text-red-500' : isLow ? 'text-amber-500' : 'text-gray-900 dark:text-white'}`}>
                           {p.quantity}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300 font-medium">
+                        {p.wholesale_price > 0 ? `RWF ${Number(p.wholesale_price).toLocaleString()}` : <span className="text-gray-400">—</span>}
                       </td>
                       <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
                         {p.low_stock_threshold}
@@ -262,6 +266,13 @@ export default function ProductsPage() {
             <label className="label">Product Name *</label>
             <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
               className="input" placeholder="e.g. Samsung Galaxy A55" autoFocus />
+          </div>
+          <div>
+            <label className="label">Wholesale / Cost Price (RWF)</label>
+            <input type="number" min="0" step="0.01" value={form.wholesale_price}
+              onChange={e => setForm({ ...form, wholesale_price: e.target.value })}
+              className="input" placeholder="0" />
+            <p className="text-xs text-gray-400 mt-1">Selling price must be ≥ this amount. Leave 0 to skip enforcement.</p>
           </div>
           {modal === 'add' && (
             <div>

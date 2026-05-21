@@ -98,10 +98,19 @@ exports.create = async (req, res) => {
           throw new Error(`Insufficient stock for: ${product.name}`);
         }
 
-        const sellingPrice = parseFloat(item.selling_price) || 0;
-        const lineTotal    = (sellingPrice - (item.discount || 0)) * item.quantity;
+        const sellingPrice  = parseFloat(item.selling_price) || 0;
+        const wholesalePrice = parseFloat(product.wholesale_price) || 0;
+
+        if (wholesalePrice > 0 && sellingPrice < wholesalePrice) {
+          throw Object.assign(
+            new Error(`Selling price for "${product.name}" (${sellingPrice}) is below wholesale price (${wholesalePrice}). Sale denied.`),
+            { status: 422 }
+          );
+        }
+
+        const lineTotal = (sellingPrice - (item.discount || 0)) * item.quantity;
         subtotal += lineTotal;
-        processedItems.push({ ...item, product, lineTotal, sellingPrice });
+        processedItems.push({ ...item, product, lineTotal, sellingPrice, wholesalePrice });
       }
 
       const totalAmount   = subtotal - parseFloat(discount);
@@ -129,6 +138,7 @@ exports.create = async (req, res) => {
             product_name:  item.product.name,
             quantity:      item.quantity,
             selling_price: item.sellingPrice,
+            cost_price:    item.wholesalePrice,
             discount:      item.discount || 0,
             line_total:    item.lineTotal,
           },
@@ -183,7 +193,7 @@ exports.create = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(400).json({ error: err.message || 'Failed to create sale' });
+    res.status(err.status || 400).json({ error: err.message || 'Failed to create sale' });
   }
 };
 
