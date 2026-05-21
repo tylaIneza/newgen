@@ -1,5 +1,6 @@
 -- ============================================================
--- ELECTRONICS SHOP MIS - DATABASE SCHEMA
+-- ELECTROSHOP MIS — FULL SCHEMA (v2)
+-- Run once on a fresh database to set up everything.
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS electronics_mis CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -169,6 +170,24 @@ CREATE TABLE expenses (
   INDEX idx_category (category_id)
 );
 
+CREATE TABLE expense_edit_requests (
+  id           INT PRIMARY KEY AUTO_INCREMENT,
+  expense_id   INT NOT NULL,
+  requested_by INT NOT NULL,
+  proposed     JSON NOT NULL,
+  status       ENUM('pending','approved','rejected') DEFAULT 'pending',
+  reviewed_by  INT,
+  review_note  TEXT,
+  reviewed_at  TIMESTAMP NULL,
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (expense_id)   REFERENCES expenses(id) ON DELETE CASCADE,
+  FOREIGN KEY (requested_by) REFERENCES users(id),
+  FOREIGN KEY (reviewed_by)  REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_expense (expense_id),
+  INDEX idx_status  (status),
+  INDEX idx_created (created_at)
+);
+
 -- ============================================================
 -- AUDIT LOGS
 -- ============================================================
@@ -199,31 +218,41 @@ CREATE TABLE audit_logs (
 -- ============================================================
 
 INSERT INTO roles (name, description) VALUES
-  ('admin', 'Full system access'),
-  ('seller', 'Sales and limited access');
+  ('admin',   'Full system access'),
+  ('seller',  'Sales and limited access'),
+  ('manager', 'Approve expenses, manage stock, view reports');
 
 INSERT INTO permissions (name, description) VALUES
-  ('can_sell', 'Create and manage sales'),
-  ('can_view_reports', 'View analytics and reports'),
-  ('can_manage_stock', 'Add and edit products/stock'),
-  ('can_manage_expenses', 'Add and edit expenses'),
-  ('can_manage_users', 'Create and manage users'),
-  ('can_view_audit_logs', 'View system audit logs'),
-  ('can_export_reports', 'Export reports to PDF/CSV');
+  ('can_sell',             'Create and manage sales'),
+  ('can_view_reports',     'View analytics and reports'),
+  ('can_manage_stock',     'Add and edit products/stock'),
+  ('can_manage_expenses',  'Add and edit expenses'),
+  ('can_manage_users',     'Create and manage users'),
+  ('can_view_audit_logs',  'View system audit logs'),
+  ('can_export_reports',   'Export reports to PDF/CSV'),
+  ('can_approve_expenses', 'Approve or reject expense edit requests');
 
+-- Admin: all permissions
 INSERT INTO role_permissions (role_id, permission_id) VALUES
-  (1, 1),(1, 2),(1, 3),(1, 4),(1, 5),(1, 6),(1, 7),
-  (2, 1);
+  (1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8);
+
+-- Seller: sell only
+INSERT INTO role_permissions (role_id, permission_id) VALUES
+  (2,1),(2,4);
+
+-- Manager: everything except user management and audit logs
+INSERT INTO role_permissions (role_id, permission_id) VALUES
+  (3,1),(3,2),(3,3),(3,4),(3,6),(3,7),(3,8);
 
 INSERT INTO expense_categories (name, description, color) VALUES
-  ('Rent', 'Shop rent and lease', '#6366f1'),
-  ('Salaries', 'Staff salaries and wages', '#8b5cf6'),
-  ('Electricity', 'Power and utility bills', '#f59e0b'),
-  ('Transport', 'Delivery and logistics', '#10b981'),
-  ('Maintenance', 'Equipment and shop maintenance', '#ef4444'),
-  ('Marketing', 'Advertising and promotions', '#3b82f6'),
-  ('Other', 'Miscellaneous expenses', '#6b7280');
+  ('Rent',        'Shop rent and lease',              '#6366f1'),
+  ('Salaries',    'Staff salaries and wages',         '#8b5cf6'),
+  ('Electricity', 'Power and utility bills',          '#f59e0b'),
+  ('Transport',   'Delivery and logistics',           '#10b981'),
+  ('Maintenance', 'Equipment and shop maintenance',   '#ef4444'),
+  ('Marketing',   'Advertising and promotions',       '#3b82f6'),
+  ('Other',       'Miscellaneous expenses',           '#6b7280');
 
--- Default admin user (password: Admin@123)
+-- Default admin account  (password: Admin@123)
 INSERT INTO users (name, email, password_hash, role_id) VALUES
   ('System Admin', 'admin@electroshop.com', '$2a$12$B3FxFRFi2Jt/cJuPKrSKTOPU1Upt1rna9N71HFK3IZr2IRnkM61H.', 1);
