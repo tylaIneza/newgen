@@ -1,5 +1,7 @@
 process.env.TZ = 'Africa/Kigali';
 require('dotenv').config();
+// Prisma $queryRaw returns COUNT/SUM as BigInt which JSON.stringify can't handle
+BigInt.prototype.toJSON = function () { return Number(this); };
 const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
