@@ -1,7 +1,6 @@
-const db = require('../config/database');
+const prisma = require('../lib/prisma');
 const { auditLog } = require('../middleware/audit');
 
-// ── helpers ──────────────────────────────────────────────────────────────────
 const canApprove = (user) =>
   user.role === 'admin' || user.permissions?.includes('can_approve_expenses');
 
@@ -10,39 +9,51 @@ const canApprove = (user) =>
 exports.getAll = async (req, res) => {
   try {
     const { category_id, start_date, end_date, page = 1, limit = 20 } = req.query;
-    const where = [], params = [];
+    const where = {};
 
-    // Sellers only see their own expenses
-    if (req.user.role === 'seller') {
-      where.push('e.created_by = ?'); params.push(req.user.id);
-    }
+    if (req.user.role === 'seller') where.created_by = req.user.id;
+    if (category_id) where.category_id  = parseInt(category_id);
+    if (start_date)  where.expense_date = { ...where.expense_date, gte: new Date(start_date) };
+    if (end_date)    where.expense_date = { ...where.expense_date, lte: new Date(end_date) };
 
-    if (category_id) { where.push('e.category_id = ?'); params.push(category_id); }
-    if (start_date)  { where.push('e.expense_date >= ?'); params.push(start_date); }
-    if (end_date)    { where.push('e.expense_date <= ?'); params.push(end_date); }
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
 
-    const whereStr = where.length ? `WHERE ${where.join(' AND ')}` : '';
-    const offset   = (parseInt(page) - 1) * parseInt(limit);
+    const [expenses, total, aggregate] = await Promise.all([
+      prisma.expense.findMany({
+        where,
+        include: {
+          category: true,
+          creator:  { select: { name: true } },
+          edit_requests: {
+            where: { status: 'pending' },
+            select: { id: true },
+          },
+        },
+        orderBy: [{ expense_date: 'desc' }, { created_at: 'desc' }],
+        skip,
+        take,
+      }),
+      prisma.expense.count({ where }),
+      prisma.expense.aggregate({ where, _sum: { amount: true } }),
+    ]);
 
-    const [expenses] = await db.execute(
-      `SELECT e.*, ec.name AS category_name, ec.color AS category_color,
-              u.name AS created_by_name,
-              (SELECT COUNT(*) FROM expense_edit_requests er
-               WHERE er.expense_id = e.id AND er.status = 'pending') AS pending_requests
-       FROM expenses e
-       JOIN expense_categories ec ON e.category_id = ec.id
-       JOIN users u ON e.created_by = u.id
-       ${whereStr} ORDER BY e.expense_date DESC, e.created_at DESC LIMIT ? OFFSET ?`,
-      [...params, parseInt(limit), offset]
-    );
-
-    const [[{ total, total_amount }]] = await db.execute(
-      `SELECT COUNT(*) AS total, COALESCE(SUM(e.amount),0) AS total_amount
-       FROM expenses e ${whereStr}`,
-      params
-    );
-
-    res.json({ expenses, total, total_amount, page: parseInt(page), limit: parseInt(limit) });
+    res.json({
+      expenses: expenses.map(e => ({
+        ...e,
+        category_name:    e.category.name,
+        category_color:   e.category.color,
+        created_by_name:  e.creator.name,
+        pending_requests: e.edit_requests.length,
+        category:         undefined,
+        creator:          undefined,
+        edit_requests:    undefined,
+      })),
+      total,
+      total_amount: Number(aggregate._sum.amount) || 0,
+      page:         parseInt(page),
+      limit:        take,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -51,25 +62,37 @@ exports.getAll = async (req, res) => {
 
 exports.getOne = async (req, res) => {
   try {
-    const [[expense]] = await db.execute(
-      `SELECT e.*, ec.name AS category_name, u.name AS created_by_name
-       FROM expenses e
-       JOIN expense_categories ec ON e.category_id = ec.id
-       JOIN users u ON e.created_by = u.id WHERE e.id = ?`,
-      [req.params.id]
-    );
+    const expense = await prisma.expense.findUnique({
+      where:   { id: parseInt(req.params.id) },
+      include: { category: true, creator: { select: { name: true } } },
+    });
     if (!expense) return res.status(404).json({ error: 'Expense not found' });
 
-    const [editRequests] = await db.execute(
-      `SELECT er.*, u.name AS requested_by_name, rv.name AS reviewed_by_name
-       FROM expense_edit_requests er
-       JOIN users u ON er.requested_by = u.id
-       LEFT JOIN users rv ON er.reviewed_by = rv.id
-       WHERE er.expense_id = ? ORDER BY er.created_at DESC`,
-      [req.params.id]
-    );
+    const editRequests = await prisma.expenseEditRequest.findMany({
+      where:   { expense_id: expense.id },
+      include: {
+        requester: { select: { name: true } },
+        reviewer:  { select: { name: true } },
+      },
+      orderBy: { created_at: 'desc' },
+    });
 
-    res.json({ expense, edit_requests: editRequests });
+    res.json({
+      expense: {
+        ...expense,
+        category_name:   expense.category.name,
+        created_by_name: expense.creator.name,
+        category:        undefined,
+        creator:         undefined,
+      },
+      edit_requests: editRequests.map(er => ({
+        ...er,
+        requested_by_name: er.requester.name,
+        reviewed_by_name:  er.reviewer?.name || null,
+        requester:         undefined,
+        reviewer:          undefined,
+      })),
+    });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -81,48 +104,56 @@ exports.create = async (req, res) => {
     return res.status(400).json({ error: 'Title, amount, category, and date are required' });
 
   try {
-    const [result] = await db.execute(
-      'INSERT INTO expenses (title, amount, category_id, expense_date, description, created_by) VALUES (?, ?, ?, ?, ?, ?)',
-      [title, amount, category_id, expense_date, description || null, req.user.id]
-    );
+    const expense = await prisma.expense.create({
+      data: {
+        title,
+        amount:       parseFloat(amount),
+        category_id:  parseInt(category_id),
+        expense_date: new Date(expense_date),
+        description:  description || null,
+        created_by:   req.user.id,
+      },
+    });
     await auditLog({
       userId: req.user.id, userName: req.user.name, action: 'CREATE_EXPENSE',
-      module: 'EXPENSES', entityType: 'expense', entityId: result.insertId,
+      module: 'EXPENSES', entityType: 'expense', entityId: expense.id,
       description: `Expense created: ${title} — ${amount}`,
       newValues: { title, amount, category_id, expense_date },
     });
-    res.status(201).json({ message: 'Expense recorded', id: result.insertId });
+    res.status(201).json({ message: 'Expense recorded', id: expense.id });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 };
 
-// Admins/Managers can edit directly; everyone else submits an approval request
 exports.update = async (req, res) => {
   const { title, amount, category_id, expense_date, description } = req.body;
-  const { id } = req.params;
+  const id = parseInt(req.params.id);
 
   try {
-    const [[old]] = await db.execute('SELECT * FROM expenses WHERE id = ?', [id]);
+    const old = await prisma.expense.findUnique({ where: { id } });
     if (!old) return res.status(404).json({ error: 'Expense not found' });
 
     if (canApprove(req.user)) {
-      // Admin/Manager: apply directly
-      await db.execute(
-        'UPDATE expenses SET title=?, amount=?, category_id=?, expense_date=?, description=? WHERE id=?',
-        [title ?? old.title, amount ?? old.amount, category_id ?? old.category_id,
-         expense_date ?? old.expense_date, description ?? old.description, id]
-      );
+      await prisma.expense.update({
+        where: { id },
+        data: {
+          title:        title        ?? old.title,
+          amount:       amount       != null ? parseFloat(amount) : old.amount,
+          category_id:  category_id  != null ? parseInt(category_id) : old.category_id,
+          expense_date: expense_date != null ? new Date(expense_date) : old.expense_date,
+          description:  description  ?? old.description,
+        },
+      });
       await auditLog({
         userId: req.user.id, userName: req.user.name, action: 'UPDATE_EXPENSE',
-        module: 'EXPENSES', entityType: 'expense', entityId: parseInt(id),
+        module: 'EXPENSES', entityType: 'expense', entityId: id,
         description: `Direct edit by ${req.user.role}: ${old.title}`,
         oldValues: old, newValues: req.body,
       });
       return res.json({ message: 'Expense updated', requires_approval: false });
     }
 
-    // Regular user: create an approval request
     const proposed = {
       title:        title        ?? old.title,
       amount:       amount       ?? old.amount,
@@ -131,29 +162,26 @@ exports.update = async (req, res) => {
       description:  description  ?? old.description,
     };
 
-    // Cancel any existing pending request from same user for same expense
-    await db.execute(
-      `UPDATE expense_edit_requests SET status = 'rejected', review_note = 'Superseded by new request'
-       WHERE expense_id = ? AND requested_by = ? AND status = 'pending'`,
-      [id, req.user.id]
-    );
+    await prisma.expenseEditRequest.updateMany({
+      where:  { expense_id: id, requested_by: req.user.id, status: 'pending' },
+      data:   { status: 'rejected', review_note: 'Superseded by new request' },
+    });
 
-    const [result] = await db.execute(
-      'INSERT INTO expense_edit_requests (expense_id, requested_by, proposed) VALUES (?, ?, ?)',
-      [id, req.user.id, JSON.stringify(proposed)]
-    );
+    const request = await prisma.expenseEditRequest.create({
+      data: { expense_id: id, requested_by: req.user.id, proposed },
+    });
 
     await auditLog({
       userId: req.user.id, userName: req.user.name, action: 'REQUEST_EXPENSE_EDIT',
-      module: 'EXPENSES', entityType: 'expense', entityId: parseInt(id),
+      module: 'EXPENSES', entityType: 'expense', entityId: id,
       description: `Edit request submitted for: ${old.title}`,
       newValues: proposed,
     });
 
     res.json({
-      message: 'Edit request submitted and awaiting approval',
+      message:          'Edit request submitted and awaiting approval',
       requires_approval: true,
-      request_id: result.insertId,
+      request_id:       request.id,
     });
   } catch (err) {
     console.error(err);
@@ -162,13 +190,14 @@ exports.update = async (req, res) => {
 };
 
 exports.remove = async (req, res) => {
+  const id = parseInt(req.params.id);
   try {
-    const [[old]] = await db.execute('SELECT title FROM expenses WHERE id = ?', [req.params.id]);
+    const old = await prisma.expense.findUnique({ where: { id }, select: { title: true } });
     if (!old) return res.status(404).json({ error: 'Expense not found' });
-    await db.execute('DELETE FROM expenses WHERE id = ?', [req.params.id]);
+    await prisma.expense.delete({ where: { id } });
     await auditLog({
       userId: req.user.id, userName: req.user.name, action: 'DELETE_EXPENSE',
-      module: 'EXPENSES', entityType: 'expense', entityId: parseInt(req.params.id),
+      module: 'EXPENSES', entityType: 'expense', entityId: id,
       description: `Deleted expense: ${old.title}`,
     });
     res.json({ message: 'Expense deleted' });
@@ -178,7 +207,7 @@ exports.remove = async (req, res) => {
 };
 
 exports.getCategories = async (req, res) => {
-  const [categories] = await db.execute('SELECT * FROM expense_categories ORDER BY name');
+  const categories = await prisma.expenseCategory.findMany({ orderBy: { name: 'asc' } });
   res.json({ categories });
 };
 
@@ -187,97 +216,122 @@ exports.getCategories = async (req, res) => {
 exports.getApprovalRequests = async (req, res) => {
   try {
     const { status = 'pending', page = 1, limit = 30 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
 
-    const [requests] = await db.execute(
-      `SELECT er.*, e.title AS expense_title, e.amount AS expense_current_amount,
-              u.name AS requested_by_name, rv.name AS reviewed_by_name,
-              ec.name AS category_name
-       FROM expense_edit_requests er
-       JOIN expenses e ON er.expense_id = e.id
-       JOIN expense_categories ec ON e.category_id = ec.id
-       JOIN users u ON er.requested_by = u.id
-       LEFT JOIN users rv ON er.reviewed_by = rv.id
-       WHERE er.status = ? ORDER BY er.created_at DESC LIMIT ? OFFSET ?`,
-      [status, parseInt(limit), offset]
-    );
+    const where = { status };
 
-    const [[{ total }]] = await db.execute(
-      'SELECT COUNT(*) AS total FROM expense_edit_requests WHERE status = ?', [status]
-    );
+    const [requests, total] = await Promise.all([
+      prisma.expenseEditRequest.findMany({
+        where,
+        include: {
+          expense:   { include: { category: true } },
+          requester: { select: { name: true } },
+          reviewer:  { select: { name: true } },
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take,
+      }),
+      prisma.expenseEditRequest.count({ where }),
+    ]);
 
-    res.json({ requests, total, page: parseInt(page) });
+    res.json({
+      requests: requests.map(r => ({
+        ...r,
+        expense_title:          r.expense.title,
+        expense_current_amount: Number(r.expense.amount),
+        category_name:          r.expense.category.name,
+        requested_by_name:      r.requester.name,
+        reviewed_by_name:       r.reviewer?.name || null,
+        expense:   undefined,
+        requester: undefined,
+        reviewer:  undefined,
+      })),
+      total,
+      page: parseInt(page),
+    });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 };
 
 exports.reviewRequest = async (req, res) => {
-  const { id } = req.params;
-  const { action, review_note } = req.body; // action: 'approve' | 'reject'
+  const id = parseInt(req.params.id);
+  const { action, review_note } = req.body;
 
   if (!['approve', 'reject'].includes(action))
     return res.status(400).json({ error: 'action must be approve or reject' });
 
-  const conn = await db.getConnection();
   try {
-    await conn.beginTransaction();
-
-    const [[request]] = await conn.execute(
-      `SELECT er.*, e.title AS expense_title FROM expense_edit_requests er
-       JOIN expenses e ON er.expense_id = e.id WHERE er.id = ?`,
-      [id]
-    );
-    if (!request) { await conn.rollback(); return res.status(404).json({ error: 'Request not found' }); }
-    if (request.status !== 'pending') { await conn.rollback(); return res.status(400).json({ error: 'Request already reviewed' }); }
-
     const newStatus = action === 'approve' ? 'approved' : 'rejected';
 
-    await conn.execute(
-      `UPDATE expense_edit_requests SET status=?, reviewed_by=?, review_note=?, reviewed_at=NOW() WHERE id=?`,
-      [newStatus, req.user.id, review_note || null, id]
-    );
+    const request = await prisma.$transaction(async (tx) => {
+      const req_ = await tx.expenseEditRequest.findUnique({
+        where:   { id },
+        include: { expense: true },
+      });
+      if (!req_)                  throw Object.assign(new Error('Request not found'),       { status: 404 });
+      if (req_.status !== 'pending') throw Object.assign(new Error('Request already reviewed'), { status: 400 });
 
-    if (action === 'approve') {
-      const p = JSON.parse(request.proposed);
-      await conn.execute(
-        'UPDATE expenses SET title=?, amount=?, category_id=?, expense_date=?, description=? WHERE id=?',
-        [p.title, p.amount, p.category_id, p.expense_date, p.description || null, request.expense_id]
-      );
-    }
+      await tx.expenseEditRequest.update({
+        where: { id },
+        data:  { status: newStatus, reviewed_by: req.user.id, review_note: review_note || null, reviewed_at: new Date() },
+      });
 
-    await conn.commit();
+      if (action === 'approve') {
+        const p = req_.proposed;
+        await tx.expense.update({
+          where: { id: req_.expense_id },
+          data: {
+            title:        p.title,
+            amount:       parseFloat(p.amount),
+            category_id:  parseInt(p.category_id),
+            expense_date: new Date(p.expense_date),
+            description:  p.description || null,
+          },
+        });
+      }
+
+      return req_;
+    });
 
     await auditLog({
       userId: req.user.id, userName: req.user.name,
       action: action === 'approve' ? 'APPROVE_EXPENSE_EDIT' : 'REJECT_EXPENSE_EDIT',
-      module: 'EXPENSES', entityType: 'expense_edit_request', entityId: parseInt(id),
-      description: `${action === 'approve' ? 'Approved' : 'Rejected'} edit for: ${request.expense_title}`,
+      module: 'EXPENSES', entityType: 'expense_edit_request', entityId: id,
+      description: `${action === 'approve' ? 'Approved' : 'Rejected'} edit for: ${request.expense.title}`,
     });
 
     res.json({ message: `Request ${newStatus}` });
   } catch (err) {
-    await conn.rollback();
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  } finally {
-    conn.release();
+    const status = err.status || 500;
+    res.status(status).json({ error: err.message || 'Server error' });
   }
 };
 
 exports.getMyRequests = async (req, res) => {
   try {
-    const [requests] = await db.execute(
-      `SELECT er.*, e.title AS expense_title, ec.name AS category_name,
-              rv.name AS reviewed_by_name
-       FROM expense_edit_requests er
-       JOIN expenses e ON er.expense_id = e.id
-       JOIN expense_categories ec ON e.category_id = ec.id
-       LEFT JOIN users rv ON er.reviewed_by = rv.id
-       WHERE er.requested_by = ? ORDER BY er.created_at DESC LIMIT 50`,
-      [req.user.id]
-    );
-    res.json({ requests });
+    const requests = await prisma.expenseEditRequest.findMany({
+      where:   { requested_by: req.user.id },
+      include: {
+        expense:  { include: { category: true } },
+        reviewer: { select: { name: true } },
+      },
+      orderBy: { created_at: 'desc' },
+      take:    50,
+    });
+
+    res.json({
+      requests: requests.map(r => ({
+        ...r,
+        expense_title:     r.expense.title,
+        category_name:     r.expense.category.name,
+        reviewed_by_name:  r.reviewer?.name || null,
+        expense:  undefined,
+        reviewer: undefined,
+      })),
+    });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }

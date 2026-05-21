@@ -1,38 +1,43 @@
-const db = require('../config/database');
+const prisma = require('../lib/prisma');
 
 exports.getAll = async (req, res) => {
   try {
     const { user_id, module, action, start_date, end_date, page = 1, limit = 50 } = req.query;
-    let where = [];
-    const params = [];
+    const where = {};
 
-    if (user_id) { where.push('al.user_id = ?'); params.push(user_id); }
-    if (module) { where.push('al.module = ?'); params.push(module); }
-    if (action) { where.push('al.action LIKE ?'); params.push(`%${action}%`); }
-    if (start_date) { where.push('DATE(al.created_at) >= ?'); params.push(start_date); }
-    if (end_date) { where.push('DATE(al.created_at) <= ?'); params.push(end_date); }
+    if (user_id)    where.user_id = parseInt(user_id);
+    if (module)     where.module  = module;
+    if (action)     where.action  = { contains: action };
+    if (start_date || end_date) {
+      where.created_at = {};
+      if (start_date) where.created_at.gte = new Date(start_date);
+      if (end_date)   where.created_at.lte = new Date(end_date + 'T23:59:59');
+    }
 
-    const whereStr = where.length ? `WHERE ${where.join(' AND ')}` : '';
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const skip  = (parseInt(page) - 1) * parseInt(limit);
+    const take  = parseInt(limit);
 
-    const [logs] = await db.execute(
-      `SELECT al.* FROM audit_logs al ${whereStr}
-       ORDER BY al.created_at DESC LIMIT ? OFFSET ?`,
-      [...params, parseInt(limit), offset]
-    );
-    const [[{ total }]] = await db.execute(
-      `SELECT COUNT(*) as total FROM audit_logs al ${whereStr}`, params
-    );
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take,
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
 
-    res.json({ logs, total, page: parseInt(page), limit: parseInt(limit) });
+    res.json({ logs, total, page: parseInt(page), limit: take });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 };
 
 exports.getModules = async (req, res) => {
-  const [modules] = await db.execute(
-    'SELECT DISTINCT module FROM audit_logs ORDER BY module'
-  );
-  res.json({ modules: modules.map(m => m.module) });
+  const logs = await prisma.auditLog.findMany({
+    select:  { module: true },
+    distinct: ['module'],
+    orderBy: { module: 'asc' },
+  });
+  res.json({ modules: logs.map(l => l.module) });
 };

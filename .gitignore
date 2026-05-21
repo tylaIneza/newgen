@@ -20,3 +20,5 @@ Thumbs.db
 # Uploads (keep folder, ignore contents)
 uploads/*
 !uploads/.gitkeep
+
+/src/generated/prisma

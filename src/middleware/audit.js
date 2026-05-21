@@ -1,28 +1,25 @@
-const db = require('../config/database');
+const prisma = require('../lib/prisma');
 
 const auditLog = async ({
   userId, userName, action, module, entityType, entityId,
   description, oldValues, newValues, ipAddress, userAgent,
 }) => {
   try {
-    await db.execute(
-      `INSERT INTO audit_logs
-       (user_id, user_name, action, module, entity_type, entity_id, description, old_values, new_values, ip_address, user_agent)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        userId || null,
-        userName || null,
+    await prisma.auditLog.create({
+      data: {
+        user_id:     userId    || null,
+        user_name:   userName  || null,
         action,
         module,
-        entityType || null,
-        entityId || null,
-        description || null,
-        oldValues ? JSON.stringify(oldValues) : null,
-        newValues ? JSON.stringify(newValues) : null,
-        ipAddress || null,
-        userAgent || null,
-      ]
-    );
+        entity_type: entityType || null,
+        entity_id:   entityId   || null,
+        description: description || null,
+        old_values:  oldValues   || undefined,
+        new_values:  newValues   || undefined,
+        ip_address:  ipAddress   || null,
+        user_agent:  userAgent   || null,
+      },
+    });
   } catch (err) {
     console.error('Audit log error:', err.message);
   }

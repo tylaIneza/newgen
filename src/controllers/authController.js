@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('../config/database');
+const prisma = require('../lib/prisma');
 const { auditLog } = require('../middleware/audit');
 
 const generateToken = (user) =>
@@ -17,17 +17,13 @@ exports.login = async (req, res) => {
   }
 
   try {
-    const [rows] = await db.execute(
-      `SELECT u.*, r.name as role FROM users u
-       JOIN roles r ON u.role_id = r.id
-       WHERE u.email = ? AND u.is_active = 1`,
-      [email.toLowerCase().trim()]
-    );
-    if (!rows.length) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
+    const user = await prisma.user.findFirst({
+      where: { email: email.toLowerCase().trim(), is_active: true },
+      include: { role: true },
+    });
 
-    const user = rows[0];
+    if (!user) return res.status(401).json({ error: 'Invalid email or password' });
+
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       await auditLog({
@@ -38,15 +34,17 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    await db.execute('UPDATE users SET last_login = NOW() WHERE id = ?', [user.id]);
+    await prisma.user.update({ where: { id: user.id }, data: { last_login: new Date() } });
 
-    const [permissions] = await db.execute(
-      `SELECT DISTINCT p.name FROM permissions p
-       LEFT JOIN role_permissions rp ON p.id = rp.permission_id AND rp.role_id = ?
-       LEFT JOIN user_permissions up ON p.id = up.permission_id AND up.user_id = ?
-       WHERE rp.permission_id IS NOT NULL OR up.permission_id IS NOT NULL`,
-      [user.role_id, user.id]
-    );
+    const permissions = await prisma.permission.findMany({
+      where: {
+        OR: [
+          { role_permissions: { some: { role_id: user.role_id } } },
+          { user_permissions: { some: { user_id: user.id } } },
+        ],
+      },
+      select: { name: true },
+    });
 
     await auditLog({
       userId: user.id, userName: user.name, action: 'LOGIN',
@@ -54,17 +52,17 @@ exports.login = async (req, res) => {
       ipAddress: req.ip, userAgent: req.headers['user-agent'],
     });
 
-    const token = generateToken(user);
+    const token = generateToken({ ...user, role: user.role.name });
     res.json({
       token,
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+        id:          user.id,
+        name:        user.name,
+        email:       user.email,
+        role:        user.role.name,
         permissions: permissions.map(p => p.name),
-        avatar_url: user.avatar_url,
-        last_login: user.last_login,
+        avatar_url:  user.avatar_url,
+        last_login:  user.last_login,
       },
     });
   } catch (err) {
@@ -84,12 +82,23 @@ exports.logout = async (req, res) => {
 
 exports.me = async (req, res) => {
   try {
-    const [rows] = await db.execute(
-      `SELECT u.id, u.name, u.email, u.phone, u.avatar_url, u.last_login, u.created_at, r.name as role
-       FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?`,
-      [req.user.id]
-    );
-    res.json({ user: { ...rows[0], permissions: req.user.permissions } });
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { role: true },
+    });
+    res.json({
+      user: {
+        id:         user.id,
+        name:       user.name,
+        email:      user.email,
+        phone:      user.phone,
+        avatar_url: user.avatar_url,
+        last_login: user.last_login,
+        created_at: user.created_at,
+        role:       user.role.name,
+        permissions: req.user.permissions,
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -102,12 +111,12 @@ exports.changePassword = async (req, res) => {
   }
 
   try {
-    const [rows] = await db.execute('SELECT password_hash FROM users WHERE id = ?', [req.user.id]);
-    const valid = await bcrypt.compare(current_password, rows[0].password_hash);
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const valid = await bcrypt.compare(current_password, user.password_hash);
     if (!valid) return res.status(400).json({ error: 'Current password is incorrect' });
 
     const hash = await bcrypt.hash(new_password, 12);
-    await db.execute('UPDATE users SET password_hash = ? WHERE id = ?', [hash, req.user.id]);
+    await prisma.user.update({ where: { id: req.user.id }, data: { password_hash: hash } });
 
     await auditLog({
       userId: req.user.id, userName: req.user.name, action: 'PASSWORD_CHANGED',
