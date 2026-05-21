@@ -7,12 +7,10 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-
-// Resolve 'next' from frontend's node_modules
-const next = require(require.resolve('next', { paths: [path.join(__dirname, '../frontend')] }));
+const next = require('next');
 
 const dev = process.env.NODE_ENV !== 'production';
-const nextApp = next({ dev, dir: path.join(__dirname, '../frontend') });
+const nextApp = next({ dev, dir: __dirname });
 const handle = nextApp.getRequestHandler();
 
 const authRoutes = require('./src/routes/auth');
@@ -39,7 +37,6 @@ nextApp.prepare().then(() => {
 
   app.set('io', io);
 
-  // Apply helmet only to API routes to avoid conflicts with Next.js headers
   app.use('/api/', helmet());
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
@@ -80,7 +77,6 @@ nextApp.prepare().then(() => {
     });
   });
 
-  // Next.js handles all non-API routes
   app.all('*', (req, res) => handle(req, res));
 
   const PORT = process.env.PORT || 3000;
@@ -88,4 +84,3 @@ nextApp.prepare().then(() => {
     console.log(`🚀 ElectroShop MIS running on http://localhost:${PORT}`);
   });
 });
-
