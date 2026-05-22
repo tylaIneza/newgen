@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
-const db = require('../config/database');
+const jwt    = require('jsonwebtoken');
+const prisma = require('../lib/prisma');
 
 const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -10,26 +10,33 @@ const authenticate = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const [rows] = await db.execute(
-      `SELECT u.id, u.name, u.email, u.role_id, u.is_active, r.name as role
-       FROM users u JOIN roles r ON u.role_id = r.id
-       WHERE u.id = ?`,
-      [decoded.id]
-    );
-    if (!rows.length || !rows[0].is_active) {
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      include: { role: true },
+    });
+
+    if (!user || !user.is_active) {
       return res.status(401).json({ error: 'User not found or inactive' });
     }
 
-    const [permissions] = await db.execute(
-      `SELECT DISTINCT p.name FROM permissions p
-       LEFT JOIN role_permissions rp ON p.id = rp.permission_id AND rp.role_id = ?
-       LEFT JOIN user_permissions up ON p.id = up.permission_id AND up.user_id = ?
-       WHERE rp.permission_id IS NOT NULL OR up.permission_id IS NOT NULL`,
-      [rows[0].role_id, rows[0].id]
-    );
+    const permissions = await prisma.permission.findMany({
+      where: {
+        OR: [
+          { role_permissions: { some: { role_id: user.role_id } } },
+          { user_permissions: { some: { user_id: user.id } } },
+        ],
+      },
+      select: { name: true },
+    });
 
     req.user = {
-      ...rows[0],
+      id:          user.id,
+      name:        user.name,
+      email:       user.email,
+      role_id:     user.role_id,
+      is_active:   user.is_active,
+      role:        user.role.name,
       permissions: permissions.map(p => p.name),
     };
     next();
