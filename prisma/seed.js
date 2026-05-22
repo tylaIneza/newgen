@@ -73,21 +73,27 @@ async function main() {
   }
   console.log('  ✓ Expense categories');
 
-  // ── Default admin user ─────────────────────────────────────────────────────
-  // Password: Admin@123  (bcrypt hash)
-  const existing = await prisma.user.findUnique({ where: { email: 'admin@electroshop.com' } });
-  if (!existing) {
-    await prisma.user.create({
-      data: {
-        name:          'System Admin',
-        email:         'admin@electroshop.com',
-        password_hash: '$2a$12$B3FxFRFi2Jt/cJuPKrSKTOPU1Upt1rna9N71HFK3IZr2IRnkM61H.',
-        role_id:       admin.id,
-      },
-    });
-    console.log('  ✓ Default admin user created  (admin@electroshop.com / Admin@123)');
-  } else {
-    console.log('  – Admin user already exists, skipped');
+  // ── Admin users ────────────────────────────────────────────────────────────
+  const adminUsers = [
+    {
+      name:          'System Admin',
+      email:         'admin@electroshop.com',
+      password_hash: '$2a$12$B3FxFRFi2Jt/cJuPKrSKTOPU1Upt1rna9N71HFK3IZr2IRnkM61H.',
+    },
+    {
+      name:          'Tyla',
+      email:         'tyla@iwacuflix.com',
+      password_hash: '$2a$12$uLZqFY5ProHHKt3wzl3.y.EHhbPrGwoB24BnRMhjMcCR8RJnkkkEa',
+    },
+  ];
+  for (const u of adminUsers) {
+    const exists = await prisma.user.findUnique({ where: { email: u.email } });
+    if (!exists) {
+      await prisma.user.create({ data: { ...u, role_id: admin.id } });
+      console.log(`  ✓ Admin created: ${u.email}`);
+    } else {
+      console.log(`  – Already exists, skipped: ${u.email}`);
+    }
   }
 
   console.log('\n✅ Seed complete.');

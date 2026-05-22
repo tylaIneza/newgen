@@ -6,8 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff, Zap, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('admin@electroshop.com');
-  const [password, setPassword] = useState('Admin@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -91,11 +91,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-gray-800/50 rounded-xl border border-gray-700">
-            <p className="text-xs text-gray-400 font-medium mb-2">Default credentials:</p>
-            <p className="text-xs text-gray-300">Email: <span className="text-indigo-400">admin@electroshop.com</span></p>
-            <p className="text-xs text-gray-300">Password: <span className="text-indigo-400">Admin@123</span></p>
-          </div>
         </div>
 
         <p className="text-center text-gray-600 text-xs mt-6">
