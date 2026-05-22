@@ -7,7 +7,15 @@
     "dev": "nodemon server.js",
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "node prisma/seed.js",
+    "db:generate": "prisma generate",
+    "db:setup": "prisma migrate deploy && node prisma/seed.js",
+    "deploy": "npm install && prisma generate && prisma migrate deploy && node prisma/seed.js && npm run build"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "axios": "^1.7.2",
@@ -37,10 +45,11 @@
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^2.3.0",
     "uuid": "^9.0.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "@prisma/client": "^6.19.3"
   },
   "devDependencies": {
-    "@prisma/client": "^6.19.3",
+    "prisma": "^6.19.3",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^20.14.2",
     "@types/react": "^18.3.29",
@@ -48,7 +57,6 @@
     "autoprefixer": "^10.4.19",
     "nodemon": "^3.1.0",
     "postcss": "^8.4.38",
-    "prisma": "^6.19.3",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.4.5"
   }
