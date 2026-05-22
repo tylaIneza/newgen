@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { expensesApi } from '@/lib/api';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
@@ -28,7 +28,7 @@ const emptyForm = {
   description: '',
 };
 
-export default function ExpensesPage() {
+function ExpensesContent() {
   const { user, isAdmin, hasPermission } = useAuth();
   const canApprove = isAdmin || user?.role === 'manager' || hasPermission('can_approve_expenses');
   const searchParams = useSearchParams();
@@ -616,5 +616,13 @@ export default function ExpensesPage() {
         })()}
       </Modal>
     </div>
+  );
+}
+
+export default function ExpensesPage() {
+  return (
+    <Suspense>
+      <ExpensesContent />
+    </Suspense>
   );
 }
