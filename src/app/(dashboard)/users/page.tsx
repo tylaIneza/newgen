@@ -8,7 +8,7 @@ import Badge from '@/components/ui/Badge';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import toast from 'react-hot-toast';
-import { Plus, Edit2, Trash2, Users, CheckCircle, XCircle, ShieldCheck } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, CheckCircle, XCircle, ShieldCheck, UserX, UserCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const PERMISSIONS = [
@@ -103,14 +103,32 @@ export default function UsersPage() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id: number, name: string) => {
-    if (id === currentUser?.id) { toast.error("Can't delete your own account"); return; }
-    if (!confirm(`Deactivate user "${name}"?`)) return;
+  const handleDeactivate = async (id: number, name: string, isActive: boolean) => {
+    if (id === currentUser?.id) { toast.error("Can't deactivate your own account"); return; }
+    const action = isActive ? 'deactivate' : 're-activate';
+    if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} user "${name}"?`)) return;
     try {
-      await usersApi.remove(id);
-      toast.success('User deactivated');
+      if (isActive) {
+        await usersApi.remove(id);
+        toast.success('User deactivated');
+      } else {
+        await usersApi.update(id, { is_active: true });
+        toast.success('User re-activated');
+      }
       load();
-    } catch { toast.error('Failed to deactivate user'); }
+    } catch { toast.error(`Failed to ${action} user`); }
+  };
+
+  const handlePermanentDelete = async (id: number, name: string) => {
+    if (id === currentUser?.id) { toast.error("Can't delete your own account"); return; }
+    if (!confirm(`PERMANENTLY DELETE "${name}"?\n\nThis cannot be undone. The user will be removed from the system forever.`)) return;
+    try {
+      await usersApi.permanentDelete(id);
+      toast.success('User permanently deleted');
+      load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || 'Failed to delete user');
+    }
   };
 
   return (
@@ -210,17 +228,22 @@ export default function UsersPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-500">{u.last_login ? formatDateTime(u.last_login) : 'Never'}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => openEdit(u)}
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => openEdit(u)} title="Edit"
                           className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-600 transition-colors">
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        {u.id !== currentUser?.id && (
-                          <button onClick={() => handleDelete(u.id, u.name)}
+                        {u.id !== currentUser?.id && (<>
+                          <button onClick={() => handleDeactivate(u.id, u.name, u.is_active)}
+                            title={u.is_active ? 'Deactivate' : 'Re-activate'}
+                            className={`p-1.5 rounded-lg transition-colors ${u.is_active ? 'hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600' : 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600'}`}>
+                            {u.is_active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                          </button>
+                          <button onClick={() => handlePermanentDelete(u.id, u.name)} title="Delete permanently"
                             className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </button>
-                        )}
+                        </>)}
                       </div>
                     </td>
                   </tr>

@@ -1,15 +1,16 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { analyticsApi } from '@/lib/api';
+import { analyticsApi, capitalApi } from '@/lib/api';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
 import { useSocket } from '@/hooks/useSocket';
 import type { DashboardData } from '@/types';
 import StatCard from '@/components/ui/StatCard';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 import {
   DollarSign, ShoppingCart, TrendingUp, TrendingDown, Package,
-  Users, AlertTriangle, Activity, ArrowRight, RefreshCw, Zap,
+  Users, AlertTriangle, Activity, ArrowRight, RefreshCw, Zap, Wallet, Plus, Trash2,
 } from 'lucide-react';
 
 import {
@@ -22,6 +23,10 @@ export default function AdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [capitalModal, setCapitalModal] = useState(false);
+  const [capitalList, setCapitalList] = useState<Array<{ id: number; amount: number; description: string | null; date: string; admin: { name: string } }>>([]);
+  const [capitalForm, setCapitalForm] = useState({ amount: '', description: '', date: new Date().toISOString().split('T')[0] });
+  const [capitalSaving, setCapitalSaving] = useState(false);
   const [liveSales, setLiveSales] = useState<Array<{
     id: number; invoice_number: string; total_amount: number;
     seller_name: string; items_count: number; created_at: string;
@@ -45,6 +50,38 @@ export default function AdminDashboard() {
     const interval = setInterval(() => fetchData(true), 60000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  const loadCapital = useCallback(async () => {
+    try { const r = await capitalApi.getAll(); setCapitalList(r.data.injections); } catch {}
+  }, []);
+
+  useEffect(() => { loadCapital(); }, [loadCapital]);
+
+  const handleAddCapital = async () => {
+    if (!capitalForm.amount || parseFloat(capitalForm.amount) <= 0) {
+      toast.error('Enter a valid amount'); return;
+    }
+    setCapitalSaving(true);
+    try {
+      await capitalApi.add({ amount: parseFloat(capitalForm.amount), description: capitalForm.description || undefined, date: capitalForm.date });
+      toast.success('Capital added');
+      setCapitalForm({ amount: '', description: '', date: new Date().toISOString().split('T')[0] });
+      loadCapital();
+      fetchData(true);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || 'Failed to add capital');
+    } finally { setCapitalSaving(false); }
+  };
+
+  const handleDeleteCapital = async (id: number) => {
+    if (!confirm('Remove this capital entry?')) return;
+    try {
+      await capitalApi.remove(id);
+      toast.success('Removed');
+      loadCapital();
+      fetchData(true);
+    } catch { toast.error('Failed to remove'); }
+  };
 
   useSocket('new_sale', (sale) => {
     toast.success(
@@ -104,6 +141,48 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+      {/* All-Time Net Position */}
+      {data.all_time && (
+        <div className={`rounded-2xl p-5 border ${data.all_time.net_profit >= 0 ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 border-emerald-400' : 'bg-gradient-to-r from-red-600 to-red-500 border-red-400'} shadow-lg`}>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                <Wallet className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white/80 uppercase tracking-wider">Total Money In Business</p>
+                <p className="text-4xl font-extrabold text-white tabular-nums mt-0.5">
+                  {formatCurrency(data.all_time.net_profit)}
+                </p>
+                <p className="text-xs text-white/70 mt-1">
+                  {Number(data.all_time.transactions).toLocaleString()} transactions · {formatCurrency(data.all_time.capital)} injected capital
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex gap-6 text-right">
+                <div>
+                  <p className="text-xs text-white/70 uppercase tracking-wide">Revenue</p>
+                  <p className="text-lg font-bold text-white tabular-nums">{formatCurrency(data.all_time.revenue)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-white/70 uppercase tracking-wide">Expenses</p>
+                  <p className="text-lg font-bold text-white/90 tabular-nums">{formatCurrency(data.all_time.expenses)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-white/70 uppercase tracking-wide">Capital</p>
+                  <p className="text-lg font-bold text-white tabular-nums">{formatCurrency(data.all_time.capital)}</p>
+                </div>
+              </div>
+              <button onClick={() => setCapitalModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-semibold transition-all">
+                <Plus className="w-4 h-4" /> Add Capital
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Today KPIs */}
       <div>
         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Today's Overview</h2>
@@ -493,6 +572,64 @@ export default function AdminDashboard() {
         <StatCard title="Total Items" value={data.stock_stats.total_items}
           icon={Activity} iconColor="text-purple-600" iconBg="bg-purple-100 dark:bg-purple-900/30" />
       </div>
+
+      {/* Capital Injection Modal */}
+      <Modal open={capitalModal} onClose={() => setCapitalModal(false)} title="Capital Injections" size="md"
+        footer={<button onClick={() => setCapitalModal(false)} className="btn-secondary">Close</button>}
+      >
+        <div className="space-y-4">
+          {/* Add form */}
+          <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 space-y-3">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Add Money to Business</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Amount *</label>
+                <input type="number" min="0" step="0.01" value={capitalForm.amount}
+                  onChange={e => setCapitalForm(f => ({ ...f, amount: e.target.value }))}
+                  className="input" placeholder="0.00" />
+              </div>
+              <div>
+                <label className="label">Date</label>
+                <input type="date" value={capitalForm.date}
+                  onChange={e => setCapitalForm(f => ({ ...f, date: e.target.value }))}
+                  className="input" />
+              </div>
+            </div>
+            <div>
+              <label className="label">Description (optional)</label>
+              <input value={capitalForm.description}
+                onChange={e => setCapitalForm(f => ({ ...f, description: e.target.value }))}
+                className="input" placeholder="e.g. Owner investment, loan, restocking cash…" />
+            </div>
+            <button onClick={handleAddCapital} disabled={capitalSaving} className="btn-primary w-full">
+              {capitalSaving ? 'Adding…' : <><Plus className="w-4 h-4" /> Add Capital</>}
+            </button>
+          </div>
+
+          {/* History */}
+          {capitalList.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">History</p>
+              <div className="max-h-64 overflow-y-auto space-y-2 scrollbar-thin">
+                {capitalList.map(c => (
+                  <div key={c.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-600 tabular-nums">{formatCurrency(Number(c.amount))}</p>
+                      <p className="text-xs text-gray-400">{c.description || '—'} · {new Date(c.date).toLocaleDateString()} · by {c.admin.name}</p>
+                    </div>
+                    <button onClick={() => handleDeleteCapital(c.id)}
+                      className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-4">No capital injections yet.</p>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

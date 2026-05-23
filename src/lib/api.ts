@@ -38,6 +38,7 @@ export const usersApi = {
   create: (data: object) => api.post('/users', data),
   update: (id: number, data: object) => api.put(`/users/${id}`, data),
   remove: (id: number) => api.delete(`/users/${id}`),
+  permanentDelete: (id: number) => api.delete(`/users/${id}/permanent`),
   getRoles: () => api.get('/users/roles'),
   getManagers: () => api.get('/users/managers'),
 };
@@ -92,6 +93,12 @@ export const auditApi = {
 export const categoriesApi = {
   getAll: () => api.get('/categories'),
   create: (data: object) => api.post('/categories', data),
+};
+
+export const capitalApi = {
+  getAll: () => api.get('/capital'),
+  add: (data: { amount: number; description?: string; date?: string }) => api.post('/capital', data),
+  remove: (id: number) => api.delete(`/capital/${id}`),
 };
 
 export default api;

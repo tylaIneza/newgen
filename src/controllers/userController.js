@@ -92,23 +92,27 @@ exports.create = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-  const { name, email, phone, role_id, is_active, permissions } = req.body;
+  const { name, email, phone, role_id, is_active, permissions, password } = req.body;
   const id = parseInt(req.params.id);
 
   try {
     const old = await prisma.user.findUnique({ where: { id } });
     if (!old) return res.status(404).json({ error: 'User not found' });
 
-    await prisma.user.update({
-      where: { id },
-      data: {
-        name:      name      || old.name,
-        email:     email     || old.email,
-        phone:     phone     || old.phone,
-        role_id:   role_id   ? parseInt(role_id) : old.role_id,
-        is_active: is_active !== undefined ? is_active : old.is_active,
-      },
-    });
+    const data = {
+      name:      name      || old.name,
+      email:     email     || old.email,
+      phone:     phone     !== undefined ? (phone || null) : old.phone,
+      role_id:   role_id   ? parseInt(role_id) : old.role_id,
+      is_active: is_active !== undefined ? is_active : old.is_active,
+    };
+
+    if (password) {
+      if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+      data.password_hash = await bcrypt.hash(password, 12);
+    }
+
+    await prisma.user.update({ where: { id }, data });
 
     if (Array.isArray(permissions)) {
       await prisma.userPermission.deleteMany({ where: { user_id: id } });
@@ -136,7 +140,7 @@ exports.update = async (req, res) => {
 exports.remove = async (req, res) => {
   const id = parseInt(req.params.id);
   if (id === req.user.id) {
-    return res.status(400).json({ error: 'Cannot delete your own account' });
+    return res.status(400).json({ error: 'Cannot deactivate your own account' });
   }
 
   try {
@@ -146,13 +150,49 @@ exports.remove = async (req, res) => {
     await prisma.user.update({ where: { id }, data: { is_active: false } });
 
     await auditLog({
-      userId: req.user.id, userName: req.user.name, action: 'DELETE_USER',
+      userId: req.user.id, userName: req.user.name, action: 'DEACTIVATE_USER',
       module: 'USERS', entityType: 'user', entityId: id,
       description: `Deactivated user: ${old.name}`,
     });
 
     res.json({ message: 'User deactivated' });
   } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+exports.permanentDelete = async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (id === req.user.id) {
+    return res.status(400).json({ error: 'Cannot delete your own account' });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id }, select: { name: true, email: true } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const [salesCount, expensesCount] = await Promise.all([
+      prisma.sale.count({ where: { seller_id: id } }),
+      prisma.expense.count({ where: { created_by: id } }),
+    ]);
+
+    if (salesCount > 0 || expensesCount > 0) {
+      return res.status(409).json({
+        error: `Cannot permanently delete: this user has ${salesCount} sale(s) and ${expensesCount} expense(s) on record. Deactivate instead to preserve data.`,
+      });
+    }
+
+    await prisma.user.delete({ where: { id } });
+
+    await auditLog({
+      userId: req.user.id, userName: req.user.name, action: 'PERMANENT_DELETE_USER',
+      module: 'USERS', entityType: 'user', entityId: id,
+      description: `Permanently deleted user: ${user.name} (${user.email})`,
+    });
+
+    res.json({ message: 'User permanently deleted' });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 };

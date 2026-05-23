@@ -23,6 +23,7 @@ const expenseRoutes = require('./src/routes/expenses');
 const analyticsRoutes = require('./src/routes/analytics');
 const auditRoutes = require('./src/routes/audit');
 const categoryRoutes = require('./src/routes/categories');
+const capitalRoutes  = require('./src/routes/capital');
 
 nextApp.prepare().then(() => {
   const app = express();
@@ -67,6 +68,7 @@ nextApp.prepare().then(() => {
   app.use('/api/analytics', analyticsRoutes);
   app.use('/api/audit', auditRoutes);
   app.use('/api/categories', categoryRoutes);
+  app.use('/api/capital', capitalRoutes);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });

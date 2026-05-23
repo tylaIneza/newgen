@@ -66,6 +66,7 @@ model User {
   granted_permissions UserPermission[] @relation("GrantedByUser")
   expense_edit_requests_submitted ExpenseEditRequest[] @relation("RequestedByUser")
   expense_edit_requests_reviewed  ExpenseEditRequest[] @relation("ReviewedByUser")
+  capital_injections CapitalInjection[]
 
   @@map("users")
 }
@@ -250,6 +251,20 @@ enum ExpenseEditRequestStatus {
   pending
   approved
   rejected
+}
+
+model CapitalInjection {
+  id          Int      @id @default(autoincrement())
+  amount      Decimal  @db.Decimal(12, 2)
+  description String?  @db.VarChar(255)
+  date        DateTime @db.Date
+  added_by    Int
+  created_at  DateTime @default(now())
+
+  admin User @relation(fields: [added_by], references: [id])
+
+  @@index([date])
+  @@map("capital_injections")
 }
 
 model AuditLog {
