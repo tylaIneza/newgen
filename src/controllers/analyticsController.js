@@ -135,7 +135,7 @@ exports.getReport = async (req, res) => {
       const [dates] = await prisma.$queryRaw`
         SELECT CURDATE() as today,
                DATE_SUB(CURDATE(), INTERVAL 7 DAY) as week_start,
-               DATE_FORMAT(CURDATE(), '%Y-%m-01') as month_start`;
+               DATE_SUB(CURDATE(), INTERVAL DAY(CURDATE())-1 DAY) as month_start`;
       if (period === 'daily')       { startDate = endDate = dates.today.toISOString().split('T')[0]; }
       else if (period === 'weekly') { startDate = dates.week_start.toISOString().split('T')[0]; endDate = dates.today.toISOString().split('T')[0]; }
       else                          { startDate = dates.month_start.toISOString().split('T')[0]; endDate = dates.today.toISOString().split('T')[0]; }

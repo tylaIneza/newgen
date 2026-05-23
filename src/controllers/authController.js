@@ -11,18 +11,25 @@ const generateToken = (user) =>
   );
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
+  const { identifier, email, password } = req.body;
+  const loginId = (identifier || email || '').trim();
+  if (!loginId || !password) {
+    return res.status(400).json({ error: 'Email/phone and password are required' });
   }
 
   try {
+    const isPhone = /^[+\d][\d\s\-().]{5,}$/.test(loginId);
     const user = await prisma.user.findFirst({
-      where: { email: email.toLowerCase().trim(), is_active: true },
+      where: {
+        is_active: true,
+        ...(isPhone
+          ? { phone: loginId }
+          : { email: loginId.toLowerCase() }),
+      },
       include: { role: true },
     });
 
-    if (!user) return res.status(401).json({ error: 'Invalid email or password' });
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
@@ -31,7 +38,7 @@ exports.login = async (req, res) => {
         module: 'AUTH', description: 'Failed login attempt',
         ipAddress: req.ip, userAgent: req.headers['user-agent'],
       });
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     await prisma.user.update({ where: { id: user.id }, data: { last_login: new Date() } });

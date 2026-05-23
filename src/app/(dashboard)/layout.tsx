@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import Cookies from 'js-cookie';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 
@@ -22,7 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
 
   useEffect(() => {
-    const token = Cookies.get('token');
+    const token = sessionStorage.getItem('token');
     if (!token) router.replace('/login');
   }, [router]);
 

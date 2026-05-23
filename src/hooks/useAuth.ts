@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import Cookies from 'js-cookie';
 import { authApi } from '@/lib/api';
 import type { User } from '@/types';
 
@@ -9,31 +8,31 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const userCookie = Cookies.get('user');
-    const token = Cookies.get('token');
-    if (userCookie && token) {
+    const storedUser = sessionStorage.getItem('user');
+    const token = sessionStorage.getItem('token');
+    if (storedUser && token) {
       try {
-        setUser(JSON.parse(userCookie));
+        setUser(JSON.parse(storedUser));
       } catch {
-        Cookies.remove('user');
-        Cookies.remove('token');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('token');
       }
     }
     setLoading(false);
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { data } = await authApi.login(email, password);
-    Cookies.set('token', data.token, { expires: 1, secure: true, sameSite: 'strict' });
-    Cookies.set('user', JSON.stringify(data.user), { expires: 1 });
+  const login = useCallback(async (identifier: string, password: string) => {
+    const { data } = await authApi.login(identifier, password);
+    sessionStorage.setItem('token', data.token);
+    sessionStorage.setItem('user', JSON.stringify(data.user));
     setUser(data.user);
     return data.user;
   }, []);
 
   const logout = useCallback(async () => {
     try { await authApi.logout(); } catch {}
-    Cookies.remove('token');
-    Cookies.remove('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     setUser(null);
   }, []);
 

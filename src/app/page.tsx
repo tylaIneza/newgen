@@ -1,13 +1,11 @@
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
-
 export default function Home() {
   const router = useRouter();
   useEffect(() => {
-    const token = Cookies.get('token');
-    const user = Cookies.get('user');
+    const token = sessionStorage.getItem('token');
+    const user = sessionStorage.getItem('user');
     if (token && user) {
       try {
         const u = JSON.parse(user);

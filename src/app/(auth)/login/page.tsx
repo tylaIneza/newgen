@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff, Zap, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -17,7 +17,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const user = await login(email, password);
+      const user = await login(identifier, password);
       toast.success(`Welcome back, ${user.name}!`);
       router.replace(user.role === 'seller' ? '/seller' : '/admin');
     } catch (err: any) {
@@ -48,13 +48,14 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="label text-gray-300">Email address</label>
+              <label className="label text-gray-300">Email or Phone number</label>
               <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                type="text"
+                value={identifier}
+                onChange={e => setIdentifier(e.target.value)}
                 className="input bg-gray-800 border-gray-700 text-white placeholder-gray-500"
-                placeholder="Enter your email"
+                placeholder="Enter your email or phone number"
+                autoComplete="username"
                 required
               />
             </div>
