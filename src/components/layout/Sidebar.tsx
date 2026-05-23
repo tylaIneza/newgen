@@ -24,7 +24,6 @@ const adminLinks = [
 
 const managerLinks = [
   { href: '/admin',     icon: LayoutDashboard, label: 'Dashboard',          exact: true },
-  { href: '/sales',     icon: ShoppingCart,    label: 'Sales' },
   { href: '/products',  icon: Package,         label: 'Products & Stock' },
   { href: '/expenses',  icon: DollarSign,      label: 'Expenses' },
   { href: '/analytics', icon: BarChart3,       label: 'Analytics & Reports' },

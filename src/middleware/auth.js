@@ -73,4 +73,11 @@ const notAdmin = (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, requireAdmin, requireAdminOrManager, requirePermission, notAdmin };
+const sellerOnly = (req, res, next) => {
+  if (req.user?.role !== 'seller') {
+    return res.status(403).json({ error: 'Only sellers can perform this action' });
+  }
+  next();
+};
+
+module.exports = { authenticate, requireAdmin, requireAdminOrManager, requirePermission, notAdmin, sellerOnly };

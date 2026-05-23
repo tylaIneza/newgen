@@ -31,8 +31,13 @@ const emptyForm = {
 
 export default function UsersPage() {
   const { user: currentUser } = useAuth();
+  const isStrictAdmin = currentUser?.role === 'admin';
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+
+  if (currentUser && !isStrictAdmin) {
+    return <p className="text-center text-gray-500 py-20">Access denied.</p>;
+  }
 
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [selected, setSelected] = useState<any>(null);
