@@ -143,12 +143,12 @@ exports.getReport = async (req, res) => {
       endDate   = end_date;
     } else {
       const [dates] = await prisma.$queryRaw`
-        SELECT CURDATE() as today,
-               DATE_SUB(CURDATE(), INTERVAL 7 DAY) as week_start,
-               DATE_SUB(CURDATE(), INTERVAL DAY(CURDATE())-1 DAY) as month_start`;
-      if (period === 'daily')       { startDate = endDate = dates.today.toISOString().split('T')[0]; }
-      else if (period === 'weekly') { startDate = dates.week_start.toISOString().split('T')[0]; endDate = dates.today.toISOString().split('T')[0]; }
-      else                          { startDate = dates.month_start.toISOString().split('T')[0]; endDate = dates.today.toISOString().split('T')[0]; }
+        SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') as today,
+               DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 7 DAY), '%Y-%m-%d') as week_start,
+               DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL DAY(CURDATE())-1 DAY), '%Y-%m-%d') as month_start`;
+      if (period === 'daily')       { startDate = endDate = dates.today; }
+      else if (period === 'weekly') { startDate = dates.week_start; endDate = dates.today; }
+      else                          { startDate = dates.month_start; endDate = dates.today; }
     }
 
     const sellerClause = seller_id ? `AND s.seller_id = ${parseInt(seller_id)}` : '';
