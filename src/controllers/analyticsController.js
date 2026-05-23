@@ -117,7 +117,7 @@ exports.getDashboard = async (req, res) => {
       today:    { revenue: todayRevenue,   expenses: todayExpense,   net_profit: todayRevenue   - todayExpense,   transactions: todaySales[0].transactions   },
       weekly:   { revenue: weeklyRevenue,  expenses: weeklyExpense,  net_profit: weeklyRevenue  - weeklyExpense,  transactions: weeklySales[0].transactions  },
       monthly:  { revenue: monthlyRevenue, expenses: monthlyExpense, net_profit: monthlyRevenue - monthlyExpense, transactions: monthlySales[0].transactions },
-      all_time: { revenue: allTimeRev, expenses: allTimeExp, capital: allTimeCap, net_profit: allTimeRev - allTimeExp + allTimeCap, transactions: allTimeRevenue[0].transactions },
+      all_time: { revenue: allTimeRev, expenses: allTimeExp, capital: allTimeCap, net_profit: allTimeRev + allTimeCap - allTimeExp, transactions: allTimeRevenue[0].transactions },
       top_products:       topProducts,
       seller_performance: sellerPerformance,
       seller_breakdown:   sellerBreakdown,

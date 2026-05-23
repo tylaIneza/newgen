@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { analyticsApi, capitalApi } from '@/lib/api';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
 import { useSocket } from '@/hooks/useSocket';
+import { useAuth } from '@/hooks/useAuth';
 import type { DashboardData } from '@/types';
 import StatCard from '@/components/ui/StatCard';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -20,6 +21,8 @@ import {
 import Link from 'next/link';
 
 export default function AdminDashboard() {
+  const { user: currentUser } = useAuth();
+  const isStrictAdmin = currentUser?.role === 'admin';
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -154,9 +157,6 @@ export default function AdminDashboard() {
                 <p className="text-4xl font-extrabold text-white tabular-nums mt-0.5">
                   {formatCurrency(data.all_time.net_profit)}
                 </p>
-                <p className="text-xs text-white/70 mt-1">
-                  {Number(data.all_time.transactions).toLocaleString()} transactions · {formatCurrency(data.all_time.capital)} injected capital
-                </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-4 items-center">
@@ -169,15 +169,13 @@ export default function AdminDashboard() {
                   <p className="text-xs text-white/70 uppercase tracking-wide">Expenses</p>
                   <p className="text-lg font-bold text-white/90 tabular-nums">{formatCurrency(data.all_time.expenses)}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-white/70 uppercase tracking-wide">Capital</p>
-                  <p className="text-lg font-bold text-white tabular-nums">{formatCurrency(data.all_time.capital)}</p>
-                </div>
               </div>
-              <button onClick={() => setCapitalModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-semibold transition-all">
-                <Plus className="w-4 h-4" /> Add Capital
-              </button>
+              {isStrictAdmin && (
+                <button onClick={() => setCapitalModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-semibold transition-all">
+                  <Plus className="w-4 h-4" /> Add Capital
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -578,8 +576,8 @@ export default function AdminDashboard() {
         footer={<button onClick={() => setCapitalModal(false)} className="btn-secondary">Close</button>}
       >
         <div className="space-y-4">
-          {/* Add form */}
-          <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 space-y-3">
+          {/* Add form — admin only */}
+          {isStrictAdmin && <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 space-y-3">
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Add Money to Business</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -604,7 +602,7 @@ export default function AdminDashboard() {
             <button onClick={handleAddCapital} disabled={capitalSaving} className="btn-primary w-full">
               {capitalSaving ? 'Adding…' : <><Plus className="w-4 h-4" /> Add Capital</>}
             </button>
-          </div>
+          </div>}
 
           {/* History */}
           {capitalList.length > 0 ? (
