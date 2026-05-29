@@ -2,13 +2,13 @@ const prisma = require('../lib/prisma');
 
 const DAILY_SAVING_TARGET = 15000;
 
-// Create or get today's saving record
+// Create or get today's saving record — uses CURDATE() for timezone-safe date matching
 async function processDailySaving() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Already processed today?
-  const existing = await prisma.saving.findUnique({ where: { date: today } });
+  // Already processed today? Use raw SQL so CURDATE() matches what's stored
+  const [existing] = await prisma.$queryRaw`
+    SELECT id, amount, revenue_today, remaining_revenue,
+           DATE_FORMAT(date, '%Y-%m-%d') as date, created_at
+    FROM savings WHERE date = CURDATE() LIMIT 1`;
   if (existing) return { saving: existing, created: false };
 
   // Get today's revenue
@@ -20,14 +20,15 @@ async function processDailySaving() {
   const amount = Math.min(DAILY_SAVING_TARGET, revenueToday);
   const remainingRevenue = revenueToday - amount;
 
-  const saving = await prisma.saving.create({
-    data: {
-      amount,
-      revenue_today:     revenueToday,
-      remaining_revenue: remainingRevenue,
-      date:              today,
-    },
-  });
+  // Insert using CURDATE() so the date is always the MySQL server's local date
+  await prisma.$executeRaw`
+    INSERT INTO savings (amount, revenue_today, remaining_revenue, date, created_at)
+    VALUES (${amount}, ${revenueToday}, ${remainingRevenue}, CURDATE(), NOW())`;
+
+  const [saving] = await prisma.$queryRaw`
+    SELECT id, amount, revenue_today, remaining_revenue,
+           DATE_FORMAT(date, '%Y-%m-%d') as date, created_at
+    FROM savings WHERE date = CURDATE() LIMIT 1`;
 
   return { saving, created: true };
 }
@@ -47,17 +48,16 @@ exports.triggerDailySaving = async (req, res) => {
 
 exports.getToday = async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const [revenueRow] = await prisma.$queryRaw`
-      SELECT COALESCE(SUM(total_amount), 0) as revenue
-      FROM sales WHERE DATE(created_at) = CURDATE()`;
-    const revenueToday = parseFloat(revenueRow.revenue);
-
-    const saving = await prisma.saving.findUnique({ where: { date: today } });
-    const savedAmount = saving ? parseFloat(saving.amount) : 0;
-    const projectedSaving = Math.min(DAILY_SAVING_TARGET, revenueToday);
+    const [[revenueRow], [saving]] = await Promise.all([
+      prisma.$queryRaw`SELECT COALESCE(SUM(total_amount), 0) as revenue
+        FROM sales WHERE DATE(created_at) = CURDATE()`,
+      prisma.$queryRaw`SELECT id, amount, revenue_today, remaining_revenue,
+        DATE_FORMAT(date, '%Y-%m-%d') as date, created_at
+        FROM savings WHERE date = CURDATE() LIMIT 1`,
+    ]);
+    const revenueToday      = parseFloat(revenueRow.revenue);
+    const savedAmount       = saving ? parseFloat(saving.amount) : 0;
+    const projectedSaving   = Math.min(DAILY_SAVING_TARGET, revenueToday);
     const projectedRemaining = revenueToday - projectedSaving;
 
     res.json({
@@ -67,7 +67,7 @@ exports.getToday = async (req, res) => {
       projected_saving:      projectedSaving,
       projected_remaining:   projectedRemaining,
       saving_recorded:       !!saving,
-      saving,
+      saving: saving || null,
     });
   } catch (err) {
     console.error(err);
@@ -211,22 +211,15 @@ exports.getAll = async (req, res) => {
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    const [todayRevRow] = await prisma.$queryRaw`
-      SELECT COALESCE(SUM(total_amount), 0) as revenue
-      FROM sales WHERE DATE(created_at) = CURDATE()`;
-
-    const [monthStats] = await prisma.$queryRaw`
-      SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(*) as days_saved
-      FROM savings
-      WHERE YEAR(date) = YEAR(CURDATE()) AND MONTH(date) = MONTH(CURDATE())`;
-
-    const [yearStats] = await prisma.$queryRaw`
-      SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(*) as days_saved
-      FROM savings WHERE YEAR(date) = YEAR(CURDATE())`;
-
-    const todaySaving = await prisma.saving.findUnique({
-      where: { date: (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })() },
-    });
+    const [[todayRevRow], [monthStats], [yearStats], [todaySaving]] = await Promise.all([
+      prisma.$queryRaw`SELECT COALESCE(SUM(total_amount), 0) as revenue
+        FROM sales WHERE DATE(created_at) = CURDATE()`,
+      prisma.$queryRaw`SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(*) as days_saved
+        FROM savings WHERE YEAR(date) = YEAR(CURDATE()) AND MONTH(date) = MONTH(CURDATE())`,
+      prisma.$queryRaw`SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(*) as days_saved
+        FROM savings WHERE YEAR(date) = YEAR(CURDATE())`,
+      prisma.$queryRaw`SELECT id, amount FROM savings WHERE date = CURDATE() LIMIT 1`,
+    ]);
 
     const revenueToday  = parseFloat(todayRevRow.revenue);
     const savedToday    = todaySaving ? parseFloat(todaySaving.amount) : 0;

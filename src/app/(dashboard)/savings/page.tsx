@@ -66,7 +66,7 @@ interface YearlyData {
 }
 
 export default function SavingsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const isAdmin = user?.role === 'admin';
 
@@ -88,8 +88,8 @@ export default function SavingsPage() {
   const LIMIT = 20;
 
   useEffect(() => {
-    if (!isAdmin) { router.replace('/admin'); }
-  }, [isAdmin, router]);
+    if (!authLoading && !isAdmin) { router.replace('/admin'); }
+  }, [authLoading, isAdmin, router]);
 
   const loadStats = useCallback(async () => {
     try { const r = await savingsApi.getDashboardStats(); setStats(r.data); } catch {}
@@ -210,6 +210,7 @@ export default function SavingsPage() {
     labelStyle: { color: '#9ca3af' },
   };
 
+  if (authLoading) return <LoadingSpinner />;
   if (!isAdmin) return null;
 
   return (
