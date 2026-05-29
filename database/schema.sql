@@ -1,5 +1,5 @@
 -- ============================================================
--- ELECTROSHOP MIS — FULL SCHEMA (v2)
+-- TYLA SHOP MIS — FULL SCHEMA (v2)
 -- Run once on a fresh database to set up everything.
 -- ============================================================
 

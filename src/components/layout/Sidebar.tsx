@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingCart, Package, DollarSign,
   BarChart3, Users, ClipboardList, Zap, X, ChevronRight,
-  LogOut, CheckSquare,
+  LogOut, CheckSquare, PiggyBank,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,6 +17,7 @@ const adminLinks = [
   { href: '/admin',     icon: LayoutDashboard, label: 'Dashboard',          exact: true },
   { href: '/sales',     icon: ShoppingCart,    label: 'Sales' },
   { href: '/products',  icon: Package,         label: 'Products & Stock' },
+  { href: '/savings',   icon: PiggyBank,       label: 'Daily Savings' },
   { href: '/analytics', icon: BarChart3,       label: 'Analytics & Reports' },
   { href: '/users',     icon: Users,           label: 'User Management' },
   { href: '/audit',     icon: ClipboardList,   label: 'Audit Logs' },
@@ -81,7 +82,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-bold text-gray-900 dark:text-white text-sm leading-none">ElectroShop</p>
+              <p className="font-bold text-gray-900 dark:text-white text-sm leading-none">Tyla Shop</p>
               <p className="text-[11px] text-gray-400 mt-0.5 font-medium tracking-wide">MIS System</p>
             </div>
           </div>

@@ -1,4 +1,4 @@
-# ElectroShop MIS — Electronics Shop Management Information System
+# Tyla Shop MIS — Shop Management Information System
 
 A complete, production-ready MIS for managing sales, stock, expenses, users, and analytics.
 

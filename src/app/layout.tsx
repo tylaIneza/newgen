@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'ElectroShop MIS',
-  description: 'Electronics Shop Management Information System',
+  title: 'Tyla Shop MIS',
+  description: 'Tyla Shop Management Information System',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

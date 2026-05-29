@@ -24,6 +24,8 @@ const analyticsRoutes = require('./src/routes/analytics');
 const auditRoutes = require('./src/routes/audit');
 const categoryRoutes = require('./src/routes/categories');
 const capitalRoutes  = require('./src/routes/capital');
+const savingsRoutes  = require('./src/routes/savings');
+const { processDailySaving } = require('./src/controllers/savingsController');
 
 nextApp.prepare().then(() => {
   const app = express();
@@ -69,6 +71,7 @@ nextApp.prepare().then(() => {
   app.use('/api/audit', auditRoutes);
   app.use('/api/categories', categoryRoutes);
   app.use('/api/capital', capitalRoutes);
+  app.use('/api/savings', savingsRoutes);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -83,8 +86,20 @@ nextApp.prepare().then(() => {
 
   app.all('*', (req, res) => handle(req, res));
 
+  // Daily savings scheduler — runs once at startup, then checks every hour
+  async function scheduleDailySaving() {
+    try {
+      const { created } = await processDailySaving();
+      if (created) console.log('[Savings] Daily saving recorded for', new Date().toDateString());
+    } catch (e) {
+      console.error('[Savings] Scheduler error:', e.message);
+    }
+  }
+  scheduleDailySaving();
+  setInterval(scheduleDailySaving, 60 * 60 * 1000); // re-check every hour
+
   const PORT = process.env.PORT || 3000;
   server.listen(PORT, () => {
-    console.log(`🚀 ElectroShop MIS running on http://localhost:${PORT}`);
+    console.log(`🚀 Tyla Shop MIS running on http://localhost:${PORT}`);
   });
 });

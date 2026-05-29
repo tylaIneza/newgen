@@ -101,4 +101,13 @@ export const capitalApi = {
   remove: (id: number) => api.delete(`/capital/${id}`),
 };
 
+export const savingsApi = {
+  getDashboardStats: () => api.get('/savings/dashboard-stats'),
+  getToday:          () => api.get('/savings/today'),
+  getMonthly:        (params?: { year?: number; month?: number }) => api.get('/savings/monthly', { params }),
+  getYearly:         (params?: { year?: number }) => api.get('/savings/yearly', { params }),
+  getAll:            (params?: object) => api.get('/savings', { params }),
+  triggerSaving:     () => api.post('/savings/create'),
+};
+
 export default api;

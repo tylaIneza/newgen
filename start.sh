@@ -1,7 +1,7 @@
 #!/bin/bash
-# ElectroShop MIS - Start both servers
+# Tyla Shop MIS - Start both servers
 
-echo "🚀 Starting ElectroShop MIS..."
+echo "🚀 Starting Tyla Shop MIS..."
 
 # Start backend
 echo "📦 Starting backend on port 5000..."
@@ -18,7 +18,7 @@ echo "✅ Both servers started!"
 echo "   Frontend: http://localhost:3000"
 echo "   Backend:  http://localhost:5000"
 echo ""
-echo "   Login: admin@electroshop.com / Admin@123"
+echo "   Login: admin@electroshop.com / Admin@123  (existing admin credentials)"
 echo ""
 echo "Press Ctrl+C to stop all servers."
 

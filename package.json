@@ -1,7 +1,7 @@
 {
-  "name": "electroshop-mis",
+  "name": "tyla-shop-mis",
   "version": "1.0.0",
-  "description": "ElectroShop Management Information System",
+  "description": "Tyla Shop Management Information System",
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",

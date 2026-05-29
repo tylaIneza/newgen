@@ -267,6 +267,19 @@ model CapitalInjection {
   @@map("capital_injections")
 }
 
+model Saving {
+  id                Int      @id @default(autoincrement())
+  amount            Decimal  @db.Decimal(12, 2)
+  revenue_today     Decimal  @db.Decimal(12, 2)
+  remaining_revenue Decimal  @db.Decimal(12, 2)
+  date              DateTime @db.Date
+  created_at        DateTime @default(now())
+
+  @@unique([date])
+  @@index([date])
+  @@map("savings")
+}
+
 model AuditLog {
   id          Int      @id @default(autoincrement())
   user_id     Int?

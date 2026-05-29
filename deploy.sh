@@ -1,12 +1,12 @@
 #!/bin/bash
-# ElectroShop MIS — VPS deployment script
+# Tyla Shop MIS — VPS deployment script
 # Run once after cloning: bash deploy.sh
 # Run again to update:    bash deploy.sh
 
 set -e
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  ElectroShop MIS — Deploy"
+echo "  Tyla Shop MIS — Deploy"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # 1. Check .env exists

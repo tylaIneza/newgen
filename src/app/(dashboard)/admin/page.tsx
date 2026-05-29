@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { analyticsApi, capitalApi } from '@/lib/api';
+import { analyticsApi, capitalApi, savingsApi } from '@/lib/api';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
 import { useSocket } from '@/hooks/useSocket';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,7 +11,7 @@ import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 import {
   DollarSign, ShoppingCart, TrendingUp, TrendingDown, Package,
-  Users, AlertTriangle, Activity, ArrowRight, RefreshCw, Zap, Wallet, Plus, Trash2,
+  Users, AlertTriangle, Activity, ArrowRight, RefreshCw, Zap, Wallet, Plus, Trash2, PiggyBank,
 } from 'lucide-react';
 
 import {
@@ -34,6 +34,19 @@ export default function AdminDashboard() {
     id: number; invoice_number: string; total_amount: number;
     seller_name: string; items_count: number; created_at: string;
   }>>([]);
+  const [savingsStats, setSavingsStats] = useState<{
+    revenue_today: number; daily_saving_target: number; saving_today: number;
+    projected_saving: number; remaining_revenue: number; saving_recorded: boolean;
+    total_savings_month: number; days_saved_month: number;
+    total_savings_year: number; days_saved_year: number;
+  } | null>(null);
+
+  const fetchSavingsStats = useCallback(async () => {
+    try {
+      const r = await savingsApi.getDashboardStats();
+      setSavingsStats(r.data);
+    } catch {}
+  }, []);
 
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -50,9 +63,10 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(() => fetchData(true), 60000);
+    fetchSavingsStats();
+    const interval = setInterval(() => { fetchData(true); fetchSavingsStats(); }, 60000);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, fetchSavingsStats]);
 
   const loadCapital = useCallback(async () => {
     try { const r = await capitalApi.getAll(); setCapitalList(r.data.injections); } catch {}
@@ -177,6 +191,35 @@ export default function AdminDashboard() {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Daily Savings Section */}
+      {isStrictAdmin && savingsStats && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+              <PiggyBank className="w-3.5 h-3.5 text-emerald-500" /> Daily Savings
+            </h2>
+            <Link href="/savings" className="text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1">
+              View All <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <StatCard title="Revenue Today" value={savingsStats.revenue_today} isCurrency
+              icon={DollarSign} iconColor="text-indigo-600" iconBg="bg-indigo-100 dark:bg-indigo-900/30" />
+            <StatCard title="Daily Saving" value={savingsStats.projected_saving} isCurrency
+              icon={PiggyBank} iconColor="text-emerald-600" iconBg="bg-emerald-100 dark:bg-emerald-900/30"
+              subtitle={savingsStats.saving_recorded ? 'Recorded ✓' : 'Pending'} />
+            <StatCard title="Remaining Revenue" value={savingsStats.remaining_revenue} isCurrency
+              icon={TrendingUp} iconColor="text-blue-600" iconBg="bg-blue-100 dark:bg-blue-900/30" />
+            <StatCard title="Savings This Month" value={savingsStats.total_savings_month} isCurrency
+              icon={Activity} iconColor="text-violet-600" iconBg="bg-violet-100 dark:bg-violet-900/30"
+              subtitle={`${savingsStats.days_saved_month} days saved`} />
+            <StatCard title="Savings This Year" value={savingsStats.total_savings_year} isCurrency
+              icon={Zap} iconColor="text-amber-600" iconBg="bg-amber-100 dark:bg-amber-900/30"
+              subtitle={`${savingsStats.days_saved_year} days saved`} />
           </div>
         </div>
       )}

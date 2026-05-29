@@ -9,7 +9,7 @@ export function exportReportPDF(report: ReportData): void {
 
   doc.setFontSize(20);
   doc.setTextColor(99, 102, 241);
-  doc.text('ElectroShop MIS', pageWidth / 2, 20, { align: 'center' });
+  doc.text('Tyla Shop MIS', pageWidth / 2, 20, { align: 'center' });
 
   doc.setFontSize(14);
   doc.setTextColor(50, 50, 50);
