@@ -21,8 +21,9 @@ import {
 import Link from 'next/link';
 
 export default function AdminDashboard() {
-  const { user: currentUser } = useAuth();
-  const isStrictAdmin = currentUser?.role === 'admin';
+  const { user: currentUser, hasPermission } = useAuth();
+  const isStrictAdmin  = currentUser?.role === 'admin';
+  const canSeeSavings  = isStrictAdmin || hasPermission('can_view_savings');
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -202,7 +203,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Daily Savings Section */}
-      {isStrictAdmin && savingsStats && (
+      {canSeeSavings && savingsStats && (
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
