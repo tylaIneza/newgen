@@ -97,10 +97,11 @@ exports.getDashboard = async (req, res) => {
         GROUP BY u.id, u.name ORDER BY monthly_revenue DESC`,
     ]);
 
-    const [allTimeRevenue, allTimeExpenses, allTimeCapital] = await Promise.all([
+    const [allTimeRevenue, allTimeExpenses, allTimeCapital, allTimeSavings] = await Promise.all([
       prisma.$queryRaw`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales`,
       prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM expenses`,
       prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM capital_injections`,
+      prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM savings`,
     ]);
 
     const todayRevenue    = parseFloat(todaySales[0].revenue);
@@ -112,12 +113,13 @@ exports.getDashboard = async (req, res) => {
     const allTimeRev      = parseFloat(allTimeRevenue[0].revenue);
     const allTimeExp      = parseFloat(allTimeExpenses[0].total);
     const allTimeCap      = parseFloat(allTimeCapital[0].total);
+    const allTimeSaved    = parseFloat(allTimeSavings[0].total);
 
     res.json({
       today:    { revenue: todayRevenue,   expenses: todayExpense,   net_profit: todayRevenue   - todayExpense,   transactions: todaySales[0].transactions   },
       weekly:   { revenue: weeklyRevenue,  expenses: weeklyExpense,  net_profit: weeklyRevenue  - weeklyExpense,  transactions: weeklySales[0].transactions  },
       monthly:  { revenue: monthlyRevenue, expenses: monthlyExpense, net_profit: monthlyRevenue - monthlyExpense, transactions: monthlySales[0].transactions },
-      all_time: { revenue: allTimeRev, expenses: allTimeExp, capital: allTimeCap, net_profit: allTimeRev + allTimeCap - allTimeExp, transactions: allTimeRevenue[0].transactions },
+      all_time: { revenue: allTimeRev, expenses: allTimeExp, capital: allTimeCap, savings: allTimeSaved, net_profit: allTimeRev + allTimeCap - allTimeExp - allTimeSaved, transactions: allTimeRevenue[0].transactions },
       top_products:       topProducts,
       seller_performance: sellerPerformance,
       seller_breakdown:   sellerBreakdown,

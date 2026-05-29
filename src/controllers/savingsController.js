@@ -2,28 +2,30 @@ const prisma = require('../lib/prisma');
 
 const DAILY_SAVING_TARGET = 15000;
 
-// Create or get today's saving record — uses CURDATE() for timezone-safe date matching
-async function processDailySaving() {
-  // Already processed today? Use raw SQL so CURDATE() matches what's stored
+// Create or update today's saving record.
+// force=true (manual trigger) always recalculates; force=false (scheduler) skips if exists.
+async function processDailySaving(force = false) {
   const [existing] = await prisma.$queryRaw`
-    SELECT id, amount, revenue_today, remaining_revenue,
-           DATE_FORMAT(date, '%Y-%m-%d') as date, created_at
-    FROM savings WHERE date = CURDATE() LIMIT 1`;
-  if (existing) return { saving: existing, created: false };
+    SELECT id FROM savings WHERE date = CURDATE() LIMIT 1`;
+  if (existing && !force) return { saving: existing, created: false };
 
   // Get today's revenue
   const [revenueRow] = await prisma.$queryRaw`
     SELECT COALESCE(SUM(total_amount), 0) as revenue
     FROM sales WHERE DATE(created_at) = CURDATE()`;
 
-  const revenueToday = parseFloat(revenueRow.revenue);
-  const amount = Math.min(DAILY_SAVING_TARGET, revenueToday);
-  const remainingRevenue = revenueToday - amount;
+  const revenueToday     = parseFloat(revenueRow.revenue);
+  const amount           = DAILY_SAVING_TARGET;              // always 15,000
+  const remainingRevenue = revenueToday - DAILY_SAVING_TARGET; // can be negative
 
-  // Insert using CURDATE() so the date is always the MySQL server's local date
+  // Upsert: insert or update so re-triggering always reflects latest revenue
   await prisma.$executeRaw`
     INSERT INTO savings (amount, revenue_today, remaining_revenue, date, created_at)
-    VALUES (${amount}, ${revenueToday}, ${remainingRevenue}, CURDATE(), NOW())`;
+    VALUES (${amount}, ${revenueToday}, ${remainingRevenue}, CURDATE(), NOW())
+    ON DUPLICATE KEY UPDATE
+      amount            = ${amount},
+      revenue_today     = ${revenueToday},
+      remaining_revenue = ${remainingRevenue}`;
 
   const [saving] = await prisma.$queryRaw`
     SELECT id, amount, revenue_today, remaining_revenue,
@@ -35,11 +37,11 @@ async function processDailySaving() {
 
 exports.triggerDailySaving = async (req, res) => {
   try {
-    const { saving, created } = await processDailySaving();
-    if (!created) {
-      return res.json({ message: 'Saving already recorded for today', saving });
-    }
-    res.status(201).json({ message: 'Daily saving recorded successfully', saving });
+    const { saving, created } = await processDailySaving(true); // force recalculate
+    res.status(created ? 201 : 200).json({
+      message: created ? 'Daily saving recorded successfully' : 'Daily saving updated with latest revenue',
+      saving,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -55,10 +57,10 @@ exports.getToday = async (req, res) => {
         DATE_FORMAT(date, '%Y-%m-%d') as date, created_at
         FROM savings WHERE date = CURDATE() LIMIT 1`,
     ]);
-    const revenueToday      = parseFloat(revenueRow.revenue);
-    const savedAmount       = saving ? parseFloat(saving.amount) : 0;
-    const projectedSaving   = Math.min(DAILY_SAVING_TARGET, revenueToday);
-    const projectedRemaining = revenueToday - projectedSaving;
+    const revenueToday       = parseFloat(revenueRow.revenue);
+    const savedAmount        = saving ? parseFloat(saving.amount) : 0;
+    const projectedSaving    = DAILY_SAVING_TARGET;                      // always 15,000
+    const projectedRemaining = revenueToday - DAILY_SAVING_TARGET;       // can be negative
 
     res.json({
       revenue_today:         revenueToday,
@@ -223,8 +225,8 @@ exports.getDashboardStats = async (req, res) => {
 
     const revenueToday  = parseFloat(todayRevRow.revenue);
     const savedToday    = todaySaving ? parseFloat(todaySaving.amount) : 0;
-    const projSaving    = Math.min(DAILY_SAVING_TARGET, revenueToday);
-    const projRemaining = revenueToday - projSaving;
+    const projSaving    = DAILY_SAVING_TARGET;                   // always 15,000
+    const projRemaining = revenueToday - DAILY_SAVING_TARGET;    // can be negative
 
     res.json({
       revenue_today:        revenueToday,

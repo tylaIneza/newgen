@@ -93,7 +93,7 @@ export interface DashboardData {
   today: { revenue: number; expenses: number; net_profit: number; transactions: number };
   weekly: { revenue: number; expenses: number; net_profit: number; transactions: number };
   monthly: { revenue: number; expenses: number; net_profit: number; transactions: number };
-  all_time: { revenue: number; expenses: number; capital: number; net_profit: number; transactions: number };
+  all_time: { revenue: number; expenses: number; capital: number; savings: number; net_profit: number; transactions: number };
   top_products: Array<{ product_name: string; qty_sold: number; revenue: number }>;
   seller_performance: Array<{ seller_name: string; transactions: number; revenue: number }>;
   seller_breakdown: Array<{ seller_id: number; seller_name: string; transactions: number; revenue: number; expenses: number; expense_count: number }>;

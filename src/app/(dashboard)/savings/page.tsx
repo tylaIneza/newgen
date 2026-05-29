@@ -246,8 +246,18 @@ export default function SavingsPage() {
           <StatCard title="Daily Saving" value={stats.projected_saving} isCurrency
             icon={PiggyBank} iconColor="text-emerald-600" iconBg="bg-emerald-100 dark:bg-emerald-900/30"
             subtitle={`Target: ${formatCurrency(stats.daily_saving_target)}`} />
-          <StatCard title="Remaining Revenue" value={stats.remaining_revenue} isCurrency
-            icon={TrendingUp} iconColor="text-blue-600" iconBg="bg-blue-100 dark:bg-blue-900/30" />
+          <div className={`stat-card ${stats.remaining_revenue < 0 ? 'border border-red-200 dark:border-red-800' : ''}`}>
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${stats.remaining_revenue < 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+              <TrendingUp className={`w-5 h-5 ${stats.remaining_revenue < 0 ? 'text-red-600' : 'text-blue-600'}`} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Remaining Revenue</p>
+              <p className={`text-2xl font-bold tabular-nums mt-0.5 ${stats.remaining_revenue < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                {stats.remaining_revenue < 0 ? '-' : ''}{formatCurrency(Math.abs(stats.remaining_revenue))}
+              </p>
+              {stats.remaining_revenue < 0 && <p className="text-xs text-red-500 mt-1 font-medium">⚠ Deficit</p>}
+            </div>
+          </div>
           <StatCard title="Total This Month" value={stats.total_savings_month} isCurrency
             icon={Activity} iconColor="text-violet-600" iconBg="bg-violet-100 dark:bg-violet-900/30"
             subtitle={`${stats.days_saved_month} days`} />
@@ -259,9 +269,11 @@ export default function SavingsPage() {
 
       {/* Today's saving banner */}
       {stats && (
-        <div className={`rounded-2xl p-5 ${stats.saving_recorded
-          ? 'bg-gradient-to-r from-emerald-600 to-teal-600'
-          : 'bg-gradient-to-r from-gray-600 to-gray-500'} text-white shadow-lg`}>
+        <div className={`rounded-2xl p-5 text-white shadow-lg ${
+          !stats.saving_recorded ? 'bg-gradient-to-r from-gray-600 to-gray-500'
+          : stats.remaining_revenue < 0 ? 'bg-gradient-to-r from-red-700 to-rose-600'
+          : 'bg-gradient-to-r from-emerald-600 to-teal-600'
+        }`}>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
@@ -270,6 +282,9 @@ export default function SavingsPage() {
               <div>
                 <p className="text-sm font-medium text-white/80 uppercase tracking-wider">Today's Saving Status</p>
                 <p className="text-3xl font-extrabold tabular-nums">{formatCurrency(stats.projected_saving)}</p>
+                {stats.remaining_revenue < 0 && (
+                  <p className="text-sm text-white/80 mt-1">⚠ Revenue short by {formatCurrency(Math.abs(stats.remaining_revenue))}</p>
+                )}
               </div>
             </div>
             <div className="flex gap-6 text-right">
@@ -279,7 +294,9 @@ export default function SavingsPage() {
               </div>
               <div>
                 <p className="text-xs text-white/70 uppercase tracking-wide">After Saving</p>
-                <p className="text-lg font-bold tabular-nums">{formatCurrency(stats.remaining_revenue)}</p>
+                <p className={`text-lg font-bold tabular-nums ${stats.remaining_revenue < 0 ? 'text-red-200' : ''}`}>
+                  {stats.remaining_revenue < 0 ? '-' : ''}{formatCurrency(Math.abs(stats.remaining_revenue))}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-white/70 uppercase tracking-wide">Status</p>
@@ -374,7 +391,9 @@ export default function SavingsPage() {
                               <PiggyBank className="w-3.5 h-3.5" />{formatCurrency(r.amount)}
                             </span>
                           </td>
-                          <td className="p-4 text-right tabular-nums text-blue-600 dark:text-blue-400 font-medium">{formatCurrency(r.remaining_revenue)}</td>
+                          <td className={`p-4 text-right tabular-nums font-medium ${r.remaining_revenue < 0 ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                            {r.remaining_revenue < 0 ? '-' : ''}{formatCurrency(Math.abs(r.remaining_revenue))}
+                          </td>
                           <td className="p-4 text-right">
                             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
                               {rate}%
@@ -488,7 +507,9 @@ export default function SavingsPage() {
                         <td className="p-4 font-medium text-gray-900 dark:text-white">{formatDate(r.date)}</td>
                         <td className="p-4 text-right tabular-nums text-gray-600 dark:text-gray-300">{formatCurrency(r.revenue_today)}</td>
                         <td className="p-4 text-right tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(r.amount)}</td>
-                        <td className="p-4 text-right tabular-nums text-blue-600 dark:text-blue-400">{formatCurrency(r.remaining_revenue)}</td>
+                        <td className={`p-4 text-right tabular-nums ${r.remaining_revenue < 0 ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                          {r.remaining_revenue < 0 ? '-' : ''}{formatCurrency(Math.abs(r.remaining_revenue))}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

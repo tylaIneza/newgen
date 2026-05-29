@@ -174,7 +174,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="flex flex-wrap gap-4 items-center">
-              <div className="flex gap-6 text-right">
+              <div className="flex gap-5 text-right flex-wrap">
                 <div>
                   <p className="text-xs text-white/70 uppercase tracking-wide">Revenue</p>
                   <p className="text-lg font-bold text-white tabular-nums">{formatCurrency(data.all_time.revenue)}</p>
@@ -183,6 +183,12 @@ export default function AdminDashboard() {
                   <p className="text-xs text-white/70 uppercase tracking-wide">Expenses</p>
                   <p className="text-lg font-bold text-white/90 tabular-nums">{formatCurrency(data.all_time.expenses)}</p>
                 </div>
+                {data.all_time.savings > 0 && (
+                  <div>
+                    <p className="text-xs text-white/70 uppercase tracking-wide">Savings Set Aside</p>
+                    <p className="text-lg font-bold text-amber-200 tabular-nums">-{formatCurrency(data.all_time.savings)}</p>
+                  </div>
+                )}
               </div>
               {isStrictAdmin && (
                 <button onClick={() => setCapitalModal(true)}
@@ -212,8 +218,22 @@ export default function AdminDashboard() {
             <StatCard title="Daily Saving" value={savingsStats.projected_saving} isCurrency
               icon={PiggyBank} iconColor="text-emerald-600" iconBg="bg-emerald-100 dark:bg-emerald-900/30"
               subtitle={savingsStats.saving_recorded ? 'Recorded ✓' : 'Pending'} />
-            <StatCard title="Remaining Revenue" value={savingsStats.remaining_revenue} isCurrency
-              icon={TrendingUp} iconColor="text-blue-600" iconBg="bg-blue-100 dark:bg-blue-900/30" />
+            <div className={`stat-card ${savingsStats.remaining_revenue < 0 ? 'border border-red-200 dark:border-red-800' : ''}`}>
+              <div className="flex items-start justify-between">
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${savingsStats.remaining_revenue < 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+                  <TrendingUp className={`w-5 h-5 ${savingsStats.remaining_revenue < 0 ? 'text-red-600' : 'text-blue-600'}`} />
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Remaining Revenue</p>
+                <p className={`text-2xl font-bold mt-0.5 tabular-nums ${savingsStats.remaining_revenue < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                  {savingsStats.remaining_revenue < 0 ? '-' : ''}{formatCurrency(Math.abs(savingsStats.remaining_revenue))}
+                </p>
+                {savingsStats.remaining_revenue < 0 && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">⚠ Deficit — below saving target</p>
+                )}
+              </div>
+            </div>
             <StatCard title="Savings This Month" value={savingsStats.total_savings_month} isCurrency
               icon={Activity} iconColor="text-violet-600" iconBg="bg-violet-100 dark:bg-violet-900/30"
               subtitle={`${savingsStats.days_saved_month} days saved`} />
