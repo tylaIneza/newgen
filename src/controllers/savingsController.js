@@ -94,7 +94,7 @@ exports.getMonthly = async (req, res) => {
         COALESCE(SUM(amount), 0)            as total_saved,
         COALESCE(SUM(revenue_today), 0)     as total_revenue,
         COALESCE(SUM(remaining_revenue), 0) as total_remaining,
-        COUNT(*)                            as days_saved
+        COUNT(CASE WHEN amount > 0 THEN 1 END) as days_saved
       FROM savings
       WHERE YEAR(date) = ${year} AND MONTH(date) = ${month}`;
 
@@ -127,7 +127,7 @@ exports.getYearly = async (req, res) => {
         COALESCE(SUM(amount), 0)            as total_saved,
         COALESCE(SUM(revenue_today), 0)     as total_revenue,
         COALESCE(SUM(remaining_revenue), 0) as total_remaining,
-        COUNT(*)                            as days_saved
+        COUNT(CASE WHEN amount > 0 THEN 1 END) as days_saved
       FROM savings
       WHERE YEAR(date) = ${year}
       GROUP BY MONTH(date)
@@ -138,7 +138,7 @@ exports.getYearly = async (req, res) => {
         COALESCE(SUM(amount), 0)            as total_saved,
         COALESCE(SUM(revenue_today), 0)     as total_revenue,
         COALESCE(SUM(remaining_revenue), 0) as total_remaining,
-        COUNT(*)                            as days_saved
+        COUNT(CASE WHEN amount > 0 THEN 1 END) as days_saved
       FROM savings
       WHERE YEAR(date) = ${year}`;
 
@@ -216,9 +216,9 @@ exports.getDashboardStats = async (req, res) => {
     const [[todayRevRow], [monthStats], [yearStats], [todaySaving]] = await Promise.all([
       prisma.$queryRaw`SELECT COALESCE(SUM(total_amount), 0) as revenue
         FROM sales WHERE DATE(created_at) = CURDATE()`,
-      prisma.$queryRaw`SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(*) as days_saved
+      prisma.$queryRaw`SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(CASE WHEN amount > 0 THEN 1 END) as days_saved
         FROM savings WHERE YEAR(date) = YEAR(CURDATE()) AND MONTH(date) = MONTH(CURDATE())`,
-      prisma.$queryRaw`SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(*) as days_saved
+      prisma.$queryRaw`SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(CASE WHEN amount > 0 THEN 1 END) as days_saved
         FROM savings WHERE YEAR(date) = YEAR(CURDATE())`,
       prisma.$queryRaw`SELECT id, amount FROM savings WHERE date = CURDATE() LIMIT 1`,
     ]);
@@ -240,6 +240,36 @@ exports.getDashboardStats = async (req, res) => {
       total_savings_year:   parseFloat(yearStats.total_saved),
       days_saved_year:      Number(yearStats.days_saved),
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Recalculate every savings record using actual sales for each date
+exports.recalculateAll = async (req, res) => {
+  try {
+    const allRecords = await prisma.$queryRaw`
+      SELECT id, DATE_FORMAT(date, '%Y-%m-%d') as date FROM savings ORDER BY date ASC`;
+
+    let updated = 0;
+    for (const rec of allRecords) {
+      const [revRow] = await prisma.$queryRaw`
+        SELECT COALESCE(SUM(total_amount), 0) as revenue
+        FROM sales WHERE DATE(created_at) = ${rec.date}`;
+
+      const revenue   = parseFloat(revRow.revenue);
+      const amount    = 17500;
+      const remaining = revenue - amount;
+
+      await prisma.$executeRaw`
+        UPDATE savings
+        SET amount = ${amount}, revenue_today = ${revenue}, remaining_revenue = ${remaining}
+        WHERE id = ${rec.id}`;
+      updated++;
+    }
+
+    res.json({ message: `Recalculated ${updated} savings record(s)`, updated });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

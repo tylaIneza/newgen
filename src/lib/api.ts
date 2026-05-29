@@ -108,6 +108,7 @@ export const savingsApi = {
   getYearly:         (params?: { year?: number }) => api.get('/savings/yearly', { params }),
   getAll:            (params?: object) => api.get('/savings', { params }),
   triggerSaving:     () => api.post('/savings/create'),
+  recalculateAll:    () => api.post('/savings/recalculate-all'),
 };
 
 export default api;

@@ -78,7 +78,8 @@ export default function SavingsPage() {
   const [total, setTotal]     = useState(0);
   const [page, setPage]       = useState(1);
   const [loading, setLoading] = useState(true);
-  const [triggering, setTriggering] = useState(false);
+  const [triggering, setTriggering]       = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
 
   const now       = new Date();
   const [selYear, setSelYear]   = useState(now.getFullYear());
@@ -138,11 +139,22 @@ export default function SavingsPage() {
     try {
       const r = await savingsApi.triggerSaving();
       toast.success(r.data.message);
-      loadStats();
-      loadDaily();
+      loadStats(); loadDaily();
     } catch (e: any) {
       toast.error(e?.response?.data?.error || 'Failed');
     } finally { setTriggering(false); }
+  };
+
+  const handleRecalculateAll = async () => {
+    if (!confirm('Recalculate all savings records using actual sales data for each day?')) return;
+    setRecalculating(true);
+    try {
+      const r = await savingsApi.recalculateAll();
+      toast.success(r.data.message);
+      loadStats(); loadDaily(); loadMonthly(); loadYearly();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || 'Recalculation failed');
+    } finally { setRecalculating(false); }
   };
 
   const exportPDF = () => {
@@ -226,6 +238,11 @@ export default function SavingsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={handleRecalculateAll} disabled={recalculating}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800 text-sm font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors disabled:opacity-50">
+            <RefreshCw className={`w-4 h-4 ${recalculating ? 'animate-spin' : ''}`} />
+            {recalculating ? 'Recalculating…' : 'Fix Records'}
+          </button>
           <button onClick={exportPDF}
             className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <Download className="w-4 h-4" /> Export PDF

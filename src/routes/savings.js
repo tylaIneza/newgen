@@ -11,5 +11,6 @@ router.get('/monthly',        ctrl.getMonthly);
 router.get('/yearly',         ctrl.getYearly);
 router.get('/',               ctrl.getAll);
 router.post('/create',        ctrl.triggerDailySaving);
+router.post('/recalculate-all', ctrl.recalculateAll);
 
 module.exports = router;
