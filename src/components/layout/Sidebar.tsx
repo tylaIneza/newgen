@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingCart, Package, DollarSign,
   BarChart3, Users, ClipboardList, Zap, X, ChevronRight,
-  LogOut, CheckSquare, PiggyBank,
+  LogOut, CheckSquare, PiggyBank, Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +21,7 @@ const adminLinks = [
   { href: '/analytics', icon: BarChart3,       label: 'Analytics & Reports' },
   { href: '/users',     icon: Users,           label: 'User Management' },
   { href: '/audit',     icon: ClipboardList,   label: 'Audit Logs' },
+  { href: '/settings',  icon: Settings,        label: 'Settings' },
 ];
 
 const managerLinks = [
@@ -43,6 +44,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const router          = useRouter();
   const isManager       = user?.role === 'manager';
   const canApprove      = isAdmin || isManager || hasPermission('can_approve_expenses');
+  const canViewSavings  = isAdmin || hasPermission('can_view_savings');
 
   const links = isAdmin ? adminLinks : isManager ? managerLinks : sellerLinks;
 
@@ -125,6 +127,16 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               </Link>
             );
           })}
+
+          {/* Savings shortcut — shown if user has can_view_savings (manager with permission) */}
+          {!isAdmin && canViewSavings && (
+            <Link href="/savings" onClick={onClose}
+              className={cn('sidebar-link group', isActive('/savings') && 'active')}>
+              <PiggyBank className={cn('w-[18px] h-[18px] flex-shrink-0 text-emerald-500')} />
+              <span className="flex-1">Daily Savings</span>
+              {isActive('/savings') && <ChevronRight className="w-3.5 h-3.5 opacity-40" />}
+            </Link>
+          )}
 
           {/* Approvals shortcut (for admin/manager) */}
           {canApprove && (

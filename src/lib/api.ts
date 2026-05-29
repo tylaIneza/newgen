@@ -102,6 +102,12 @@ export const capitalApi = {
   remove: (id: number) => api.delete(`/capital/${id}`),
 };
 
+export const settingsApi = {
+  getRolePermissions:    () => api.get('/settings/role-permissions'),
+  toggleRolePermission:  (data: { role_id: number; permission_id: number; grant: boolean }) =>
+    api.post('/settings/role-permissions/toggle', data),
+};
+
 export const savingsApi = {
   getDashboardStats: () => api.get('/savings/dashboard-stats'),
   getToday:          () => api.get('/savings/today'),

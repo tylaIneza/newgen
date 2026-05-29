@@ -24,7 +24,8 @@ const analyticsRoutes = require('./src/routes/analytics');
 const auditRoutes = require('./src/routes/audit');
 const categoryRoutes = require('./src/routes/categories');
 const capitalRoutes  = require('./src/routes/capital');
-const savingsRoutes  = require('./src/routes/savings');
+const savingsRoutes   = require('./src/routes/savings');
+const settingsRoutes  = require('./src/routes/settings');
 const { processDailySaving } = require('./src/controllers/savingsController');
 
 nextApp.prepare().then(() => {
@@ -71,7 +72,8 @@ nextApp.prepare().then(() => {
   app.use('/api/audit', auditRoutes);
   app.use('/api/categories', categoryRoutes);
   app.use('/api/capital', capitalRoutes);
-  app.use('/api/savings', savingsRoutes);
+  app.use('/api/savings',  savingsRoutes);
+  app.use('/api/settings', settingsRoutes);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });

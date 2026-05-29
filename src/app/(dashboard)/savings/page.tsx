@@ -66,9 +66,10 @@ interface YearlyData {
 }
 
 export default function SavingsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, hasPermission } = useAuth();
   const router = useRouter();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin      = user?.role === 'admin';
+  const canSeeSavings = isAdmin || hasPermission('can_view_savings');
 
   const [tab, setTab]         = useState<'daily' | 'monthly' | 'yearly'>('daily');
   const [stats, setStats]     = useState<DashStats | null>(null);
@@ -89,8 +90,8 @@ export default function SavingsPage() {
   const LIMIT = 20;
 
   useEffect(() => {
-    if (!authLoading && !isAdmin) { router.replace('/admin'); }
-  }, [authLoading, isAdmin, router]);
+    if (!authLoading && !canSeeSavings) { router.replace('/admin'); }
+  }, [authLoading, canSeeSavings, router]);
 
   const loadStats = useCallback(async () => {
     try { const r = await savingsApi.getDashboardStats(); setStats(r.data); } catch {}
@@ -223,7 +224,7 @@ export default function SavingsPage() {
   };
 
   if (authLoading) return <LoadingSpinner />;
-  if (!isAdmin) return null;
+  if (!canSeeSavings) return null;
 
   return (
     <div className="space-y-6">
@@ -238,20 +239,24 @@ export default function SavingsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handleRecalculateAll} disabled={recalculating}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800 text-sm font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 ${recalculating ? 'animate-spin' : ''}`} />
-            {recalculating ? 'Recalculating…' : 'Fix Records'}
-          </button>
+          {isAdmin && (
+            <button onClick={handleRecalculateAll} disabled={recalculating}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800 text-sm font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors disabled:opacity-50">
+              <RefreshCw className={`w-4 h-4 ${recalculating ? 'animate-spin' : ''}`} />
+              {recalculating ? 'Recalculating…' : 'Fix Records'}
+            </button>
+          )}
           <button onClick={exportPDF}
             className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <Download className="w-4 h-4" /> Export PDF
           </button>
-          <button onClick={handleTrigger} disabled={triggering || stats?.saving_recorded}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors">
-            <Zap className="w-4 h-4" />
-            {triggering ? 'Processing…' : stats?.saving_recorded ? 'Saved Today ✓' : 'Record Today\'s Saving'}
-          </button>
+          {isAdmin && (
+            <button onClick={handleTrigger} disabled={triggering || stats?.saving_recorded}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors">
+              <Zap className="w-4 h-4" />
+              {triggering ? 'Processing…' : stats?.saving_recorded ? 'Saved Today ✓' : 'Record Today\'s Saving'}
+            </button>
+          )}
         </div>
       </div>
 

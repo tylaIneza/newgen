@@ -12,7 +12,9 @@ const pageTitles: Record<string, string> = {
   '/expenses': 'Expenses',
   '/analytics': 'Analytics & Reports',
   '/users': 'User Management',
-  '/audit': 'Audit Logs',
+  '/audit':    'Audit Logs',
+  '/savings':  'Daily Savings',
+  '/settings': 'System Settings',
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
