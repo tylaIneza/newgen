@@ -15,8 +15,8 @@ async function processDailySaving(force = false) {
     FROM sales WHERE DATE(created_at) = CURDATE()`;
 
   const revenueToday     = parseFloat(revenueRow.revenue);
-  const amount           = DAILY_SAVING_TARGET;              // always 17,500
-  const remainingRevenue = revenueToday - DAILY_SAVING_TARGET; // can be negative
+  const amount           = Math.min(DAILY_SAVING_TARGET, revenueToday); // actual money saved
+  const remainingRevenue = revenueToday - DAILY_SAVING_TARGET;          // deficit if negative
 
   // Upsert: insert or update so re-triggering always reflects latest revenue
   await prisma.$executeRaw`
@@ -59,8 +59,8 @@ exports.getToday = async (req, res) => {
     ]);
     const revenueToday       = parseFloat(revenueRow.revenue);
     const savedAmount        = saving ? parseFloat(saving.amount) : 0;
-    const projectedSaving    = DAILY_SAVING_TARGET;                      // always 17,500
-    const projectedRemaining = revenueToday - DAILY_SAVING_TARGET;       // can be negative
+    const projectedSaving    = Math.min(DAILY_SAVING_TARGET, revenueToday); // actual money saved
+    const projectedRemaining = revenueToday - DAILY_SAVING_TARGET;         // deficit if negative
 
     res.json({
       revenue_today:         revenueToday,
@@ -225,8 +225,8 @@ exports.getDashboardStats = async (req, res) => {
 
     const revenueToday  = parseFloat(todayRevRow.revenue);
     const savedToday    = todaySaving ? parseFloat(todaySaving.amount) : 0;
-    const projSaving    = DAILY_SAVING_TARGET;                   // always 17,500
-    const projRemaining = revenueToday - DAILY_SAVING_TARGET;    // can be negative
+    const projSaving    = Math.min(DAILY_SAVING_TARGET, revenueToday); // actual money saved
+    const projRemaining = revenueToday - DAILY_SAVING_TARGET;         // deficit if negative
 
     res.json({
       revenue_today:        revenueToday,
@@ -259,8 +259,8 @@ exports.recalculateAll = async (req, res) => {
         FROM sales WHERE DATE(created_at) = ${rec.date}`;
 
       const revenue   = parseFloat(revRow.revenue);
-      const amount    = 17500;
-      const remaining = revenue - amount;
+      const amount    = Math.min(DAILY_SAVING_TARGET, revenue); // actual money saved
+      const remaining = revenue - DAILY_SAVING_TARGET;          // deficit if negative
 
       await prisma.$executeRaw`
         UPDATE savings
