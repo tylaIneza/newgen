@@ -97,28 +97,32 @@ exports.getDashboard = async (req, res) => {
         GROUP BY u.id, u.name ORDER BY monthly_revenue DESC`,
     ]);
 
-    const [allTimeRevenue, allTimeExpenses, allTimeCapital, allTimeSavings] = await Promise.all([
+    const [allTimeRevenue, allTimeExpenses, allTimeCapital, allTimeSavings, todaySavingRow, monthlySavingRow] = await Promise.all([
       prisma.$queryRaw`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales`,
       prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM expenses`,
       prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM capital_injections`,
       prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM savings`,
+      prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM savings WHERE date = CURDATE()`,
+      prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM savings WHERE DATE_FORMAT(date,'%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')`,
     ]);
 
     const todayRevenue    = parseFloat(todaySales[0].revenue);
     const todayExpense    = parseFloat(todayExpenses[0].total);
+    const todaySaving     = parseFloat(todaySavingRow[0].total);
     const weeklyRevenue   = parseFloat(weeklySales[0].revenue);
     const weeklyExpense   = parseFloat(weeklyExpenses[0].total);
     const monthlyRevenue  = parseFloat(monthlySales[0].revenue);
     const monthlyExpense  = parseFloat(monthlyExpenses[0].total);
+    const monthlySaving   = parseFloat(monthlySavingRow[0].total);
     const allTimeRev      = parseFloat(allTimeRevenue[0].revenue);
     const allTimeExp      = parseFloat(allTimeExpenses[0].total);
     const allTimeCap      = parseFloat(allTimeCapital[0].total);
     const allTimeSaved    = parseFloat(allTimeSavings[0].total);
 
     res.json({
-      today:    { revenue: todayRevenue,   expenses: todayExpense,   net_profit: todayRevenue   - todayExpense,   transactions: todaySales[0].transactions   },
-      weekly:   { revenue: weeklyRevenue,  expenses: weeklyExpense,  net_profit: weeklyRevenue  - weeklyExpense,  transactions: weeklySales[0].transactions  },
-      monthly:  { revenue: monthlyRevenue, expenses: monthlyExpense, net_profit: monthlyRevenue - monthlyExpense, transactions: monthlySales[0].transactions },
+      today:    { revenue: todayRevenue,   expenses: todayExpense,   saving: todaySaving,   net_profit: todayRevenue   - todayExpense   - todaySaving,   transactions: todaySales[0].transactions   },
+      weekly:   { revenue: weeklyRevenue,  expenses: weeklyExpense,  net_profit: weeklyRevenue  - weeklyExpense,                                         transactions: weeklySales[0].transactions  },
+      monthly:  { revenue: monthlyRevenue, expenses: monthlyExpense, saving: monthlySaving,  net_profit: monthlyRevenue - monthlyExpense - monthlySaving, transactions: monthlySales[0].transactions },
       all_time: { revenue: allTimeRev, expenses: allTimeExp, capital: allTimeCap, savings: allTimeSaved, net_profit: allTimeRev + allTimeCap - allTimeExp - allTimeSaved, transactions: allTimeRevenue[0].transactions },
       top_products:       topProducts,
       seller_performance: sellerPerformance,
