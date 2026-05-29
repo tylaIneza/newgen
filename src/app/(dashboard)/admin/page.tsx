@@ -208,7 +208,7 @@ export default function AdminDashboard() {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard title="Revenue Today" value={savingsStats.revenue_today} isCurrency
-              icon={DollarSign} iconColor="text-indigo-600" iconBg="bg-indigo-100 dark:bg-indigo-900/30" />
+              icon={DollarSign} iconColor="text-blue-700" iconBg="bg-blue-100 dark:bg-blue-900/30" />
             <StatCard title="Daily Saving" value={savingsStats.projected_saving} isCurrency
               icon={PiggyBank} iconColor="text-emerald-600" iconBg="bg-emerald-100 dark:bg-emerald-900/30"
               subtitle={savingsStats.saving_recorded ? 'Recorded ✓' : 'Pending'} />
@@ -229,7 +229,7 @@ export default function AdminDashboard() {
         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Today's Overview</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard title="Revenue Today" value={data.today.revenue} isCurrency
-            icon={DollarSign} iconColor="text-indigo-600" iconBg="bg-indigo-100 dark:bg-indigo-900/30" />
+            icon={DollarSign} iconColor="text-blue-700" iconBg="bg-blue-100 dark:bg-blue-900/30" />
           <StatCard title="Expenses Today" value={data.today.expenses} isCurrency
             icon={TrendingDown} iconColor="text-red-600" iconBg="bg-red-100 dark:bg-red-900/30" />
           <StatCard
@@ -275,7 +275,7 @@ export default function AdminDashboard() {
               const todayNet   = Number(u.today_revenue)   - Number(u.today_expenses);
               const weeklyNet  = Number(u.weekly_revenue)  - Number(u.weekly_expenses);
               const monthlyNet = Number(u.monthly_revenue) - Number(u.monthly_expenses);
-              const colors = ['bg-indigo-500', 'bg-purple-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
+              const colors = ['bg-blue-600', 'bg-purple-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
               const avatarColor = colors[u.seller_id % colors.length];
               return (
                 <div key={u.seller_id} className="card p-5 space-y-4">
@@ -315,9 +315,9 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* This Week */}
-                    <div className="p-3 rounded-xl bg-indigo-50/60 dark:bg-indigo-900/10">
+                    <div className="p-3 rounded-xl bg-blue-50/60 dark:bg-blue-900/10">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide">This Week</span>
+                        <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wide">This Week</span>
                         <span className="text-[10px] text-gray-400">{u.weekly_sales} sale{u.weekly_sales !== 1 ? 's' : ''}</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-center">
@@ -381,7 +381,7 @@ export default function AdminDashboard() {
                   contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.15)' }}
                   formatter={(v: number) => [formatCurrency(v), 'Revenue']}
                 />
-                <Bar dataKey="revenue" fill="#6366f1" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="revenue" fill="#1d4ed8" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -410,7 +410,7 @@ export default function AdminDashboard() {
                         paddingAngle={3} strokeWidth={0}
                       >
                         {filtered.map((entry, i) => (
-                          <Cell key={i} fill={entry.color || '#6366f1'} />
+                          <Cell key={i} fill={entry.color || '#1d4ed8'} />
                         ))}
                       </Pie>
                       <Tooltip
@@ -436,7 +436,7 @@ export default function AdminDashboard() {
                       <div key={i}>
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: e.color || '#6366f1' }} />
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: e.color || '#1d4ed8' }} />
                             <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[100px]">{e.name}</span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -448,7 +448,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                           <div className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${pct}%`, backgroundColor: e.color || '#6366f1' }} />
+                            style={{ width: `${pct}%`, backgroundColor: e.color || '#1d4ed8' }} />
                         </div>
                       </div>
                     );
@@ -477,7 +477,7 @@ export default function AdminDashboard() {
             <div className="space-y-3">
               {data.seller_performance.map((s, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-700 dark:text-indigo-400 font-semibold text-xs flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-800 dark:text-blue-400 font-semibold text-xs flex-shrink-0">
                     {s.seller_name.slice(0, 2).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -495,7 +495,7 @@ export default function AdminDashboard() {
         <div className="card p-5 xl:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="section-title">Recent Sales</h3>
-            <Link href="/sales" className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+            <Link href="/sales" className="text-sm text-blue-700 hover:text-blue-800 flex items-center gap-1">
               View all <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -503,8 +503,8 @@ export default function AdminDashboard() {
             <div className="space-y-2">
               {data.recent_sales.slice(0, 6).map(sale => (
                 <div key={sale.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center flex-shrink-0">
-                    <ShoppingCart className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
+                    <ShoppingCart className="w-4 h-4 text-blue-700 dark:text-blue-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{sale.invoice_number}</p>
@@ -568,7 +568,7 @@ export default function AdminDashboard() {
                     <tr key={s.seller_id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-700 dark:text-indigo-400 font-semibold text-xs flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-800 dark:text-blue-400 font-semibold text-xs flex-shrink-0">
                             {s.seller_name.slice(0, 2).toUpperCase()}
                           </div>
                           <div>

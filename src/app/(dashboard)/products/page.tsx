@@ -227,7 +227,7 @@ export default function ProductsPage() {
                               <BarChart2 className="w-4 h-4" />
                             </button>
                             <button onClick={() => openEdit(p)} title="Edit"
-                              className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-600 transition-colors">
+                              className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-700 transition-colors">
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button onClick={() => handleDelete(p.id, p.name)} title="Remove"
@@ -374,7 +374,7 @@ export default function ProductsPage() {
             <input
               type="file" accept=".xlsx,.xls,.csv,text/csv"
               onChange={e => { setImportFile(e.target.files?.[0] || null); setImportResult(null); }}
-              className="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 cursor-pointer"
+              className="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-800 dark:file:text-blue-400 hover:file:bg-blue-100 cursor-pointer"
             />
           </div>
 

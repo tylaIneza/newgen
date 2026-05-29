@@ -51,7 +51,7 @@ export default function SellerDashboard() {
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Revenue Today" value={data.today?.revenue || 0} isCurrency
-          icon={DollarSign} iconColor="text-indigo-600" />
+          icon={DollarSign} iconColor="text-blue-700" />
         <StatCard title="Transactions Today" value={data.today?.transactions || 0}
           icon={ShoppingCart} iconColor="text-purple-600" iconBg="bg-purple-100 dark:bg-purple-900/30" />
         <StatCard title="Weekly Revenue" value={data.weekly?.revenue || 0} isCurrency
@@ -73,8 +73,8 @@ export default function SellerDashboard() {
               <AreaChart data={data.daily_trend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#1d4ed8" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#1d4ed8" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(107,114,128,0.1)" />
@@ -83,7 +83,7 @@ export default function SellerDashboard() {
                 <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                 <Tooltip formatter={(v: number) => [formatCurrency(v), 'Revenue']}
                   contentStyle={{ borderRadius: 12 }} />
-                <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2} fill="url(#rev)" />
+                <Area type="monotone" dataKey="revenue" stroke="#1d4ed8" strokeWidth={2} fill="url(#rev)" />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
@@ -98,7 +98,7 @@ export default function SellerDashboard() {
             <div className="space-y-3">
               {data.top_products.map((p: any, i: number) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">
                     #{i + 1}
                   </div>
                   <div className="flex-1">
@@ -134,7 +134,7 @@ export default function SellerDashboard() {
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {data.recent_sales.map((s: any) => (
                   <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="py-3 font-medium text-indigo-600 dark:text-indigo-400">{s.invoice_number}</td>
+                    <td className="py-3 font-medium text-blue-700 dark:text-blue-400">{s.invoice_number}</td>
                     <td className="py-3 text-gray-600 dark:text-gray-400">{s.items_count} items</td>
                     <td className="py-3 text-gray-500">{formatDateTime(s.created_at)}</td>
                     <td className="py-3 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(s.total_amount)}</td>

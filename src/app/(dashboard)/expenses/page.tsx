@@ -205,7 +205,7 @@ function ExpensesContent() {
         </div>
         {catBreakdown.map(c => (
           <div key={c.id} className="stat-card">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color || '#6366f1' }} />
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color || '#1d4ed8' }} />
             <div>
               <p className="text-sm text-gray-500 font-medium">{c.name}</p>
               <p className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">{formatCurrency(c.total)}</p>
@@ -236,11 +236,11 @@ function ExpensesContent() {
                   <Tooltip
                     formatter={(v: number) => [formatCurrency(v), 'Amount']}
                     contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.15)', fontSize: 12 }}
-                    cursor={{ fill: 'rgba(99,102,241,0.06)' }}
+                    cursor={{ fill: 'rgba(29,78,216,0.06)' }}
                   />
                   <Bar dataKey="total" radius={[0, 6, 6, 0]} barSize={20}>
                     {chartData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color || '#6366f1'} />
+                      <Cell key={i} fill={entry.color || '#1d4ed8'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -254,7 +254,7 @@ function ExpensesContent() {
                     <div key={i}>
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color || '#6366f1' }} />
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color || '#1d4ed8' }} />
                           <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{c.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -266,7 +266,7 @@ function ExpensesContent() {
                       </div>
                       <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all duration-700"
-                          style={{ width: `${pct}%`, backgroundColor: c.color || '#6366f1' }} />
+                          style={{ width: `${pct}%`, backgroundColor: c.color || '#1d4ed8' }} />
                       </div>
                     </div>
                   );
@@ -288,7 +288,7 @@ function ExpensesContent() {
             className={cn(
               'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2',
               tab === t.key
-                ? 'border-indigo-600 text-indigo-700 dark:text-indigo-400'
+                ? 'border-blue-700 text-blue-800 dark:text-blue-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             )}>
             {t.label}
@@ -348,7 +348,7 @@ function ExpensesContent() {
                         </td>
                         <td className="px-4 py-3">
                           <span className="inline-flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: (e as any).category_color || '#6366f1' }} />
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: (e as any).category_color || '#1d4ed8' }} />
                             <span className="text-gray-600 dark:text-gray-400">{(e as any).category_name}</span>
                           </span>
                         </td>
@@ -367,7 +367,7 @@ function ExpensesContent() {
                           <div className="flex items-center justify-center gap-1.5">
                             {!isAdmin && (
                               <button onClick={() => openEdit(e)} title="Edit / Request edit"
-                                className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-600 transition-colors">
+                                className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-700 transition-colors">
                                 <Edit2 className="w-4 h-4" />
                               </button>
                             )}

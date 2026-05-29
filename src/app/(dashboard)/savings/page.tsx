@@ -242,7 +242,7 @@ export default function SavingsPage() {
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard title="Revenue Today" value={stats.revenue_today} isCurrency
-            icon={DollarSign} iconColor="text-indigo-600" iconBg="bg-indigo-100 dark:bg-indigo-900/30" />
+            icon={DollarSign} iconColor="text-blue-700" iconBg="bg-blue-100 dark:bg-blue-900/30" />
           <StatCard title="Daily Saving" value={stats.projected_saving} isCurrency
             icon={PiggyBank} iconColor="text-emerald-600" iconBg="bg-emerald-100 dark:bg-emerald-900/30"
             subtitle={`Target: ${formatCurrency(stats.daily_saving_target)}`} />
@@ -342,7 +342,7 @@ export default function SavingsPage() {
                       <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
                       <Tooltip {...tooltipStyle} formatter={(v: number) => formatCurrency(v)} />
                       <Area type="monotone" dataKey="amount" name="Saved" stroke="#10b981" fill="url(#sgGrad)" strokeWidth={2} />
-                      <Area type="monotone" dataKey="revenue_today" name="Revenue" stroke="#6366f1" fill="none" strokeWidth={1.5} strokeDasharray="4 2" />
+                      <Area type="monotone" dataKey="revenue_today" name="Revenue" stroke="#1d4ed8" fill="none" strokeWidth={1.5} strokeDasharray="4 2" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -437,7 +437,7 @@ export default function SavingsPage() {
                 </div>
                 <div className="card p-4 text-center">
                   <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Revenue</p>
-                  <p className="text-2xl font-extrabold text-indigo-600 tabular-nums">{formatCurrency(monthly.total_revenue)}</p>
+                  <p className="text-2xl font-extrabold text-blue-700 tabular-nums">{formatCurrency(monthly.total_revenue)}</p>
                 </div>
                 <div className="card p-4 text-center">
                   <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Remaining</p>
@@ -462,7 +462,7 @@ export default function SavingsPage() {
                       <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
                       <Tooltip {...tooltipStyle} formatter={(v: number) => formatCurrency(v)} />
                       <Legend />
-                      <Bar dataKey="revenue_today" name="Revenue" fill="#6366f1" radius={[4,4,0,0]} />
+                      <Bar dataKey="revenue_today" name="Revenue" fill="#1d4ed8" radius={[4,4,0,0]} />
                       <Bar dataKey="amount" name="Saved" fill="#10b981" radius={[4,4,0,0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -532,7 +532,7 @@ export default function SavingsPage() {
                 </div>
                 <div className="card p-4 text-center">
                   <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Revenue {selYear}</p>
-                  <p className="text-2xl font-extrabold text-indigo-600 tabular-nums">{formatCurrency(yearly.total_revenue)}</p>
+                  <p className="text-2xl font-extrabold text-blue-700 tabular-nums">{formatCurrency(yearly.total_revenue)}</p>
                 </div>
                 <div className="card p-4 text-center">
                   <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Days Saved</p>
@@ -552,7 +552,7 @@ export default function SavingsPage() {
                       <Tooltip {...tooltipStyle} formatter={(v: number) => formatCurrency(v)} />
                       <Legend />
                       <Line type="monotone" dataKey="total_saved" name="Total Saved" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4, fill: '#10b981' }} />
-                      <Line type="monotone" dataKey="total_revenue" name="Revenue" stroke="#6366f1" strokeWidth={2} strokeDasharray="5 3" dot={{ r: 3 }} />
+                      <Line type="monotone" dataKey="total_revenue" name="Revenue" stroke="#1d4ed8" strokeWidth={2} strokeDasharray="5 3" dot={{ r: 3 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>

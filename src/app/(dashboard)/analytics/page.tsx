@@ -62,8 +62,8 @@ export default function AnalyticsPage() {
             <button key={p} onClick={() => setPeriod(p)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all capitalize ${
                 period === p
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-indigo-300'
+                  ? 'bg-blue-700 text-white shadow-sm'
+                  : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-300'
               }`}>
               {p}
             </button>
@@ -104,7 +104,7 @@ export default function AnalyticsPage() {
             <p className="text-sm text-gray-500">
               Report period: <span className="font-medium">{formatDate(report.start_date)}</span> — <span className="font-medium">{formatDate(report.end_date)}</span>
               {sellerId && sellers.length > 0 && (
-                <span className="ml-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-medium">
+                <span className="ml-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 text-xs font-medium">
                   <Users className="w-3 h-3" />
                   {sellers.find(s => String(s.id) === sellerId)?.name}
                 </span>
@@ -115,7 +115,7 @@ export default function AnalyticsPage() {
           {/* KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard title="Total Revenue" value={report.summary.revenue} isCurrency
-              icon={DollarSign} iconColor="text-indigo-600" />
+              icon={DollarSign} iconColor="text-blue-700" />
             <StatCard title="Total Expenses" value={report.summary.expenses} isCurrency
               icon={TrendingDown} iconColor="text-red-600" iconBg="bg-red-100 dark:bg-red-900/30" />
             <div className="stat-card">
@@ -139,7 +139,7 @@ export default function AnalyticsPage() {
             <h3 className="section-title mb-4">Financial Summary</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               {[
-                { label: 'Revenue', value: report.summary.revenue, color: 'text-indigo-600' },
+                { label: 'Revenue', value: report.summary.revenue, color: 'text-blue-700' },
                 { label: 'Operating Expenses', value: report.summary.expenses, color: 'text-red-600' },
               ].map(item => (
                 <div key={item.label} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800">
@@ -160,8 +160,8 @@ export default function AnalyticsPage() {
                   <AreaChart data={report.daily_trend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#1d4ed8" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#1d4ed8" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(107,114,128,0.1)" />
@@ -170,7 +170,7 @@ export default function AnalyticsPage() {
                     <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                     <Tooltip formatter={(v: number) => [formatCurrency(v), 'Revenue']}
                       contentStyle={{ borderRadius: 12 }} />
-                    <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2} fill="url(#revGrad)" />
+                    <Area type="monotone" dataKey="revenue" stroke="#1d4ed8" strokeWidth={2} fill="url(#revGrad)" />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : <p className="text-sm text-gray-400 text-center py-16">No trend data.</p>}
@@ -187,7 +187,7 @@ export default function AnalyticsPage() {
                     <YAxis dataKey="product_name" type="category" tick={{ fontSize: 10 }} tickLine={false} width={120}
                       tickFormatter={v => v.length > 15 ? v.slice(0, 15) + '…' : v} />
                     <Tooltip formatter={(v: number) => [formatCurrency(v)]} contentStyle={{ borderRadius: 12 }} />
-                    <Bar dataKey="revenue" fill="#6366f1" radius={[0, 6, 6, 0]} />
+                    <Bar dataKey="revenue" fill="#1d4ed8" radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : <p className="text-sm text-gray-400 text-center py-16">No product data.</p>}

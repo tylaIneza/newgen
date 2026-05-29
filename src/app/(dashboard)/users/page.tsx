@@ -147,8 +147,8 @@ export default function UsersPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="stat-card">
-          <div className="w-11 h-11 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <Users className="w-5 h-5 text-indigo-600" />
+          <div className="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+            <Users className="w-5 h-5 text-blue-700" />
           </div>
           <div>
             <p className="text-sm text-gray-500">Total Users</p>
@@ -211,7 +211,7 @@ export default function UsersPage() {
                   <tr key={u.id} className="table-row">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-700 dark:text-indigo-400 font-semibold text-sm">
+                        <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-800 dark:text-blue-400 font-semibold text-sm">
                           {u.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
@@ -235,7 +235,7 @@ export default function UsersPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => openEdit(u)} title="Edit"
-                          className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-600 transition-colors">
+                          className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-700 transition-colors">
                           <Edit2 className="w-4 h-4" />
                         </button>
                         {u.id !== currentUser?.id && (<>
@@ -302,12 +302,12 @@ export default function UsersPage() {
                 <label key={r.id}
                   className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                     form.role_id === r.id
-                      ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
+                      ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20'
                       : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                   }`}>
                   <input type="radio" name="role" value={r.id} checked={form.role_id === r.id}
                     onChange={() => setForm({ ...form, role_id: r.id, permissions: [] })}
-                    className="text-indigo-600" />
+                    className="text-blue-700" />
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{r.label}</p>
                     <p className="text-xs text-gray-400">{r.description}</p>
@@ -323,7 +323,7 @@ export default function UsersPage() {
                 {PERMISSIONS.filter(p => p.name !== 'can_sell').map(p => (
                   <label key={p.id} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     <input type="checkbox" checked={form.permissions.includes(p.id)}
-                      onChange={() => togglePermission(p.id)} className="rounded text-indigo-600" />
+                      onChange={() => togglePermission(p.id)} className="rounded text-blue-700" />
                     <span className="text-sm text-gray-700 dark:text-gray-300">{p.label}</span>
                   </label>
                 ))}

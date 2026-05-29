@@ -10,7 +10,7 @@ import {
 
 const STATS = [
   { icon: TrendingUp,   color: 'from-emerald-500 to-teal-500',   label: 'Revenue Tracked',    value: 'Real-time' },
-  { icon: ShoppingCart, color: 'from-indigo-500 to-violet-500',  label: 'Sales Managed',      value: 'All in one' },
+  { icon: ShoppingCart, color: 'from-blue-600 to-violet-500',  label: 'Sales Managed',      value: 'All in one' },
   { icon: PiggyBank,    color: 'from-amber-500 to-orange-500',   label: 'Daily Savings',      value: '15,000 RWF/day' },
   { icon: BarChart3,    color: 'from-pink-500 to-rose-500',      label: 'Analytics',          value: 'Live insights' },
   { icon: Package,      color: 'from-cyan-500 to-blue-500',      label: 'Stock Control',      value: 'Auto alerts' },
@@ -74,21 +74,21 @@ export default function LoginPage() {
 
         {/* Animated gradient blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="animate-blob absolute -top-32 -left-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl" />
+          <div className="animate-blob absolute -top-32 -left-32 w-96 h-96 bg-blue-700/20 rounded-full blur-3xl" />
           <div className="animate-blob absolute top-1/2 -right-20 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl" style={{ animationDelay: '3s' }} />
           <div className="animate-blob absolute -bottom-20 left-1/3 w-72 h-72 bg-violet-600/15 rounded-full blur-3xl" style={{ animationDelay: '6s' }} />
         </div>
 
         {/* Grid overlay */}
         <div className="absolute inset-0"
-          style={{ backgroundImage: 'linear-gradient(rgba(99,102,241,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.05) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
+          style={{ backgroundImage: 'linear-gradient(rgba(29,78,216,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(29,78,216,0.05) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
 
         {/* Content */}
         <div className="relative z-10 flex flex-col h-full p-12">
 
           {/* Logo */}
           <div className="flex items-center gap-3 mb-auto">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/40">
+            <div className="w-10 h-10 rounded-xl bg-blue-700 flex items-center justify-center shadow-lg shadow-blue-700/40">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -99,7 +99,7 @@ export default function LoginPage() {
 
           {/* Hero text */}
           <div className="my-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-600/10 border border-blue-600/20 mb-6">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -109,7 +109,7 @@ export default function LoginPage() {
 
             <h2 className="text-4xl xl:text-5xl font-extrabold text-white leading-tight mb-4">
               Manage your<br />
-              <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
                 business smarter
               </span>
             </h2>
@@ -119,8 +119,8 @@ export default function LoginPage() {
 
             {/* Dynamic feature ticker */}
             <div className="flex items-center gap-3 mb-10 h-7 overflow-hidden">
-              <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                <ArrowRight className="w-3 h-3 text-indigo-400" />
+              <div className="w-5 h-5 rounded-full bg-blue-600/20 flex items-center justify-center flex-shrink-0">
+                <ArrowRight className="w-3 h-3 text-blue-400" />
               </div>
               <p key={featIdx} className="text-gray-300 text-sm font-medium animate-slide-up">
                 {FEATURES[featIdx]}
@@ -146,7 +146,7 @@ export default function LoginPage() {
                       {/* Dot indicators */}
                       <div className="flex gap-1.5 ml-auto">
                         {STATS.map((_, j) => (
-                          <span key={j} className={`block rounded-full transition-all duration-300 ${j === activeStat ? 'w-4 h-1.5 bg-indigo-400' : 'w-1.5 h-1.5 bg-white/20'}`} />
+                          <span key={j} className={`block rounded-full transition-all duration-300 ${j === activeStat ? 'w-4 h-1.5 bg-blue-400' : 'w-1.5 h-1.5 bg-white/20'}`} />
                         ))}
                       </div>
                     </div>
@@ -180,7 +180,7 @@ export default function LoginPage() {
 
         {/* Mobile background blobs */}
         <div className="lg:hidden absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-20 -right-20 w-72 h-72 bg-indigo-600/15 rounded-full blur-3xl" />
+          <div className="absolute -top-20 -right-20 w-72 h-72 bg-blue-700/15 rounded-full blur-3xl" />
           <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl" />
         </div>
 
@@ -188,7 +188,7 @@ export default function LoginPage() {
 
           {/* Mobile logo */}
           <div className="flex lg:hidden flex-col items-center mb-10">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-600/30 mb-4" style={{ animation: 'pulse-ring 2s ease-out infinite' }}>
+            <div className="w-14 h-14 rounded-2xl bg-blue-700 flex items-center justify-center shadow-xl shadow-blue-700/30 mb-4" style={{ animation: 'pulse-ring 2s ease-out infinite' }}>
               <Zap className="w-7 h-7 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-white">Tyla Shop</h1>
@@ -200,8 +200,8 @@ export default function LoginPage() {
 
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-1">
-                <ShieldCheck className="w-4 h-4 text-indigo-400" />
-                <span className="text-indigo-400 text-xs font-semibold uppercase tracking-wider">Secure Login</span>
+                <ShieldCheck className="w-4 h-4 text-blue-400" />
+                <span className="text-blue-400 text-xs font-semibold uppercase tracking-wider">Secure Login</span>
               </div>
               <h2 className="text-2xl font-bold text-white">Welcome back</h2>
               <p className="text-gray-500 text-sm mt-1">Sign in to your account to continue</p>
@@ -214,14 +214,14 @@ export default function LoginPage() {
                 <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                   Email or Phone
                 </label>
-                <div className={`relative rounded-xl transition-all duration-200 ${focused === 'id' ? 'ring-2 ring-indigo-500/50' : ''}`}>
+                <div className={`relative rounded-xl transition-all duration-200 ${focused === 'id' ? 'ring-2 ring-blue-600/50' : ''}`}>
                   <input
                     type="text"
                     value={identifier}
                     onChange={e => setIdentifier(e.target.value)}
                     onFocus={() => setFocused('id')}
                     onBlur={() => setFocused(null)}
-                    className="w-full bg-gray-800/80 border border-gray-700 text-white placeholder-gray-600 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-indigo-500 transition-all duration-200"
+                    className="w-full bg-gray-800/80 border border-gray-700 text-white placeholder-gray-600 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-blue-600 transition-all duration-200"
                     placeholder="admin@example.com or +250..."
                     autoComplete="username"
                     required
@@ -239,14 +239,14 @@ export default function LoginPage() {
                 <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                   Password
                 </label>
-                <div className={`relative rounded-xl transition-all duration-200 ${focused === 'pw' ? 'ring-2 ring-indigo-500/50' : ''}`}>
+                <div className={`relative rounded-xl transition-all duration-200 ${focused === 'pw' ? 'ring-2 ring-blue-600/50' : ''}`}>
                   <input
                     type={showPass ? 'text' : 'password'}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     onFocus={() => setFocused('pw')}
                     onBlur={() => setFocused(null)}
-                    className="w-full bg-gray-800/80 border border-gray-700 text-white placeholder-gray-600 rounded-xl px-4 py-3.5 text-sm pr-12 focus:outline-none focus:border-indigo-500 transition-all duration-200"
+                    className="w-full bg-gray-800/80 border border-gray-700 text-white placeholder-gray-600 rounded-xl px-4 py-3.5 text-sm pr-12 focus:outline-none focus:border-blue-600 transition-all duration-200"
                     placeholder="••••••••"
                     required
                   />
@@ -265,7 +265,7 @@ export default function LoginPage() {
                 type="submit"
                 disabled={loading || !identifier || !password}
                 className="w-full relative overflow-hidden rounded-xl py-3.5 font-semibold text-sm text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed group"
-                style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #1d4ed8 0%, #1d4ed8 100%)' }}
               >
                 {/* Hover shine effect */}
                 <span className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12" />
@@ -291,8 +291,8 @@ export default function LoginPage() {
 
             {/* Divider hint */}
             <div className="mt-6 pt-6 border-t border-gray-800 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
-                <ShieldCheck className="w-4 h-4 text-indigo-400" />
+              <div className="w-8 h-8 rounded-lg bg-blue-600/10 flex items-center justify-center flex-shrink-0">
+                <ShieldCheck className="w-4 h-4 text-blue-400" />
               </div>
               <p className="text-gray-600 text-xs leading-relaxed">
                 Protected by secure authentication. Contact your admin if you've lost access.

@@ -45,12 +45,12 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
             <p className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">{user?.name}</p>
             <p className={cn(
               'text-[11px] font-semibold capitalize',
-              isAdmin ? 'text-indigo-500' : 'text-emerald-500'
+              isAdmin ? 'text-blue-600' : 'text-emerald-500'
             )}>
               {user?.role}
             </p>
           </div>
-          <div className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+          <div className="w-9 h-9 rounded-full bg-blue-700 flex items-center justify-center text-white font-bold text-xs shadow-sm">
             {user?.name?.slice(0, 2).toUpperCase()}
           </div>
         </div>

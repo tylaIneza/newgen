@@ -57,7 +57,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
   const roleBadge = isAdmin ? 'Admin' : isManager ? 'Manager' : 'Seller';
   const roleColor = isAdmin
-    ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400'
+    ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400'
     : isManager
     ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400'
     : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400';
@@ -78,7 +78,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         {/* Logo */}
         <div className="flex items-center justify-between px-5 h-16 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/25">
+            <div className="w-9 h-9 rounded-xl bg-blue-700 flex items-center justify-center shadow-lg shadow-blue-700/25">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -94,7 +94,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         {/* User */}
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800">
-            <div className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-blue-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
               {user?.name?.slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
@@ -118,7 +118,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 className={cn('sidebar-link group', active && 'active')}>
                 <Icon className={cn(
                   'w-[18px] h-[18px] flex-shrink-0 transition-colors',
-                  active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'
+                  active ? 'text-blue-700 dark:text-blue-400' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'
                 )} />
                 <span className="flex-1">{label}</span>
                 {active && <ChevronRight className="w-3.5 h-3.5 opacity-40" />}

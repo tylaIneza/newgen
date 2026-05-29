@@ -145,7 +145,7 @@ export default function SalesPage() {
           <div className="flex items-center gap-3">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 4px 14px rgba(99,102,241,0.4)' }}
+              style={{ background: 'linear-gradient(135deg,#1d4ed8,#8b5cf6)', boxShadow: '0 4px 14px rgba(29,78,216,0.4)' }}
             >
               <ShoppingCart className="w-4 h-4 text-white" />
             </div>
@@ -175,9 +175,9 @@ export default function SalesPage() {
               onClick={() => setTab(t)}
               className="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all"
               style={{
-                background: tab === t ? 'rgba(99,102,241,0.2)' : 'transparent',
-                color:      tab === t ? '#818cf8' : C.muted,
-                border:     `1px solid ${tab === t ? 'rgba(99,102,241,0.4)' : 'transparent'}`,
+                background: tab === t ? 'rgba(29,78,216,0.2)' : 'transparent',
+                color:      tab === t ? '#60a5fa' : C.muted,
+                border:     `1px solid ${tab === t ? 'rgba(29,78,216,0.4)' : 'transparent'}`,
               }}
             >
               {t === 'new' ? 'New Sale' : (
@@ -185,7 +185,7 @@ export default function SalesPage() {
                   History
                   {sales.length > 0 && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                      style={{ background: 'rgba(99,102,241,0.2)', color: '#818cf8' }}>
+                      style={{ background: 'rgba(29,78,216,0.2)', color: '#60a5fa' }}>
                       {sales.length}
                     </span>
                   )}
@@ -208,7 +208,7 @@ export default function SalesPage() {
               <div className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: C.dim }} />
                 <input
-                  className="w-full pl-10 pr-9 py-2 rounded-xl text-sm text-white placeholder-gray-600 outline-none focus:ring-1 focus:ring-indigo-500/40"
+                  className="w-full pl-10 pr-9 py-2 rounded-xl text-sm text-white placeholder-gray-600 outline-none focus:ring-1 focus:ring-blue-600/40"
                   style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}` }}
                   placeholder="Filter by product name, SKU or category…"
                   value={query}
@@ -230,8 +230,8 @@ export default function SalesPage() {
             <div className="flex-1 overflow-y-auto px-4 py-4">
               {filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.08)' }}>
-                    <Package className="w-6 h-6 text-indigo-400" />
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(29,78,216,0.08)' }}>
+                    <Package className="w-6 h-6 text-blue-400" />
                   </div>
                   <p className="text-sm font-semibold text-white">No products found</p>
                   <p className="text-xs" style={{ color: C.muted }}>Try a different search term</p>
@@ -249,18 +249,18 @@ export default function SalesPage() {
                         disabled={oos || added}
                         className="relative flex flex-col gap-2 p-3.5 rounded-2xl text-left transition-all duration-150 group"
                         style={{
-                          background: added ? 'rgba(99,102,241,0.15)' : oos ? 'rgba(255,255,255,0.02)' : C.card,
-                          border: `1px solid ${added ? 'rgba(99,102,241,0.4)' : oos ? 'rgba(255,255,255,0.05)' : C.border}`,
+                          background: added ? 'rgba(29,78,216,0.15)' : oos ? 'rgba(255,255,255,0.02)' : C.card,
+                          border: `1px solid ${added ? 'rgba(29,78,216,0.4)' : oos ? 'rgba(255,255,255,0.05)' : C.border}`,
                           opacity: oos ? 0.45 : 1,
                           cursor: oos || added ? 'default' : 'pointer',
                         }}
-                        onMouseEnter={e => { if (!oos && !added) (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.5)'; }}
+                        onMouseEnter={e => { if (!oos && !added) (e.currentTarget as HTMLElement).style.borderColor = 'rgba(29,78,216,0.5)'; }}
                         onMouseLeave={e => { if (!oos && !added) (e.currentTarget as HTMLElement).style.borderColor = C.border; }}
                       >
                         {/* status badge */}
                         <div className="absolute top-2.5 right-2.5">
                           {added
-                            ? <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: 'rgba(99,102,241,0.25)', color: '#818cf8' }}>In cart</span>
+                            ? <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: 'rgba(29,78,216,0.25)', color: '#60a5fa' }}>In cart</span>
                             : oos
                             ? <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-red-500/20 text-red-400">Out</span>
                             : lowStock
@@ -270,10 +270,10 @@ export default function SalesPage() {
 
                         {/* icon */}
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: added ? 'rgba(99,102,241,0.25)' : 'rgba(99,102,241,0.12)' }}>
+                          style={{ background: added ? 'rgba(29,78,216,0.25)' : 'rgba(29,78,216,0.12)' }}>
                           {added
-                            ? <CheckCircle className="w-4 h-4 text-indigo-400" />
-                            : <Package className="w-4 h-4 text-indigo-400" />}
+                            ? <CheckCircle className="w-4 h-4 text-blue-400" />
+                            : <Package className="w-4 h-4 text-blue-400" />}
                         </div>
 
                         {/* name */}
@@ -291,8 +291,8 @@ export default function SalesPage() {
                         {/* hover overlay */}
                         {!oos && !added && (
                           <div className="absolute inset-0 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                            style={{ background: 'rgba(99,102,241,0.06)' }}>
-                            <Plus className="w-5 h-5 text-indigo-400" />
+                            style={{ background: 'rgba(29,78,216,0.06)' }}>
+                            <Plus className="w-5 h-5 text-blue-400" />
                           </div>
                         )}
                       </button>
@@ -309,11 +309,11 @@ export default function SalesPage() {
             {/* Cart header */}
             <div className="px-4 py-3 flex items-center justify-between flex-shrink-0" style={{ borderBottom: `1px solid ${C.border}` }}>
               <div className="flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-indigo-400" />
+                <Receipt className="w-4 h-4 text-blue-400" />
                 <span className="font-bold text-white text-sm">Cart</span>
                 {cart.length > 0 && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                    style={{ background: 'rgba(99,102,241,0.2)', color: '#818cf8' }}>
+                    style={{ background: 'rgba(29,78,216,0.2)', color: '#60a5fa' }}>
                     {cart.length}
                   </span>
                 )}
@@ -388,7 +388,7 @@ export default function SalesPage() {
                           <label className="block text-[10px] mb-1 font-medium" style={{ color: C.dim }}>Quantity</label>
                           <input
                             type="number" min="1" max={item.product.quantity}
-                            className="w-full text-center py-1.5 rounded-lg text-xs font-semibold text-white outline-none focus:ring-1 focus:ring-indigo-500/40"
+                            className="w-full text-center py-1.5 rounded-lg text-xs font-semibold text-white outline-none focus:ring-1 focus:ring-blue-600/40"
                             style={{ background: 'rgba(255,255,255,0.07)', border: `1px solid ${C.border}` }}
                             value={item.qty}
                             placeholder=""
@@ -415,7 +415,7 @@ export default function SalesPage() {
 
                       <div className="flex justify-between text-xs">
                         <span style={{ color: C.muted }}>Subtotal</span>
-                        <span className="font-black" style={{ color: '#818cf8' }}>{formatCurrency(subtotal)}</span>
+                        <span className="font-black" style={{ color: '#60a5fa' }}>{formatCurrency(subtotal)}</span>
                       </div>
                       {profit !== null && wholesale > 0 && (
                         <div className="flex justify-between text-xs">
@@ -441,13 +441,13 @@ export default function SalesPage() {
               </div>
               <div className="flex justify-between items-center" style={{ borderTop: `1px solid ${C.border}`, paddingTop: '12px' }}>
                 <span className="text-sm font-bold text-white">Total</span>
-                <span className="text-2xl font-black" style={{ color: '#818cf8' }}>{formatCurrency(cartTotal)}</span>
+                <span className="text-2xl font-black" style={{ color: '#60a5fa' }}>{formatCurrency(cartTotal)}</span>
               </div>
               <button
                 onClick={submit}
                 disabled={saving || cart.length === 0}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40"
-                style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: cart.length ? '0 4px 14px rgba(99,102,241,0.35)' : 'none' }}
+                style={{ background: 'linear-gradient(135deg,#1d4ed8,#8b5cf6)', boxShadow: cart.length ? '0 4px 14px rgba(29,78,216,0.35)' : 'none' }}
               >
                 {saving
                   ? <><Loader2 className="w-4 h-4 animate-spin" />Processing…</>
@@ -489,8 +489,8 @@ export default function SalesPage() {
                     <tr>
                       <td colSpan={7} className="px-4 py-16 text-center">
                         <div className="flex flex-col items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.08)' }}>
-                            <ShoppingCart className="w-5 h-5 text-indigo-400" />
+                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(29,78,216,0.08)' }}>
+                            <ShoppingCart className="w-5 h-5 text-blue-400" />
                           </div>
                           <p className="text-sm font-semibold text-white">No sales yet</p>
                           <p className="text-xs" style={{ color: C.muted }}>Completed sales will appear here</p>
@@ -500,25 +500,25 @@ export default function SalesPage() {
                   ) : sales.map(s => (
                     <tr key={s.id}
                       style={{ borderBottom: `1px solid ${C.border}` }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.04)'}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(29,78,216,0.04)'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                     >
-                      <td className="px-4 py-3 font-semibold" style={{ color: '#818cf8' }}>{s.invoice_number}</td>
+                      <td className="px-4 py-3 font-semibold" style={{ color: '#60a5fa' }}>{s.invoice_number}</td>
                       <td className="px-4 py-3" style={{ color: C.muted }}>{s.seller_name}</td>
                       <td className="px-4 py-3" style={{ color: C.muted }}>{s.customer_name || '—'}</td>
                       <td className="px-4 py-3">
                         <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                          style={{ background: s.payment_method === 'CASH' ? 'rgba(52,211,153,0.15)' : 'rgba(99,102,241,0.15)', color: s.payment_method === 'CASH' ? '#34d399' : '#818cf8' }}>
+                          style={{ background: s.payment_method === 'CASH' ? 'rgba(52,211,153,0.15)' : 'rgba(29,78,216,0.15)', color: s.payment_method === 'CASH' ? '#34d399' : '#60a5fa' }}>
                           {s.payment_method}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-xs" style={{ color: C.muted }}>{formatDateTime(s.created_at)}</td>
-                      <td className="px-4 py-3 text-right font-black" style={{ color: '#818cf8' }}>{formatCurrency(s.total_amount)}</td>
+                      <td className="px-4 py-3 text-right font-black" style={{ color: '#60a5fa' }}>{formatCurrency(s.total_amount)}</td>
                       <td className="px-4 py-3 text-center">
                         <button onClick={() => openView(s.id)}
                           className="w-7 h-7 rounded-lg flex items-center justify-center mx-auto transition-all"
                           style={{ color: C.dim }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.12)'; (e.currentTarget as HTMLElement).style.color = '#818cf8'; }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(29,78,216,0.12)'; (e.currentTarget as HTMLElement).style.color = '#60a5fa'; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = C.dim; }}
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -540,7 +540,7 @@ export default function SalesPage() {
         {viewSale && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><span className="text-gray-500">Invoice</span><p className="font-semibold text-indigo-600">{viewSale.invoice_number}</p></div>
+              <div><span className="text-gray-500">Invoice</span><p className="font-semibold text-blue-700">{viewSale.invoice_number}</p></div>
               <div><span className="text-gray-500">Date</span><p className="font-medium">{formatDateTime(viewSale.created_at)}</p></div>
               <div><span className="text-gray-500">Seller</span><p className="font-medium">{viewSale.seller_name}</p></div>
               <div><span className="text-gray-500">Payment</span><p className="font-medium">{viewSale.payment_method}</p></div>
@@ -575,7 +575,7 @@ export default function SalesPage() {
               <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{formatCurrency(viewSale.subtotal)}</span></div>
               {viewSale.discount > 0 && <div className="flex justify-between text-red-500"><span>Discount</span><span>−{formatCurrency(viewSale.discount)}</span></div>}
               <div className="flex justify-between font-bold text-base border-t pt-2 mt-1">
-                <span>Total</span><span className="text-indigo-600">{formatCurrency(viewSale.total_amount)}</span>
+                <span>Total</span><span className="text-blue-700">{formatCurrency(viewSale.total_amount)}</span>
               </div>
             </div>
           </div>
