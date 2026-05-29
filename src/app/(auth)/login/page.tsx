@@ -11,7 +11,7 @@ import {
 const STATS = [
   { icon: TrendingUp,   color: 'from-emerald-500 to-teal-500',   label: 'Revenue Tracked',    value: 'Real-time' },
   { icon: ShoppingCart, color: 'from-blue-600 to-violet-500',  label: 'Sales Managed',      value: 'All in one' },
-  { icon: PiggyBank,    color: 'from-amber-500 to-orange-500',   label: 'Daily Savings',      value: '15,000 RWF/day' },
+  { icon: PiggyBank,    color: 'from-amber-500 to-orange-500',   label: 'Daily Savings',      value: '17,500 RWF/day' },
   { icon: BarChart3,    color: 'from-pink-500 to-rose-500',      label: 'Analytics',          value: 'Live insights' },
   { icon: Package,      color: 'from-cyan-500 to-blue-500',      label: 'Stock Control',      value: 'Auto alerts' },
 ];
@@ -166,7 +166,7 @@ export default function LoginPage() {
           <div className="absolute bottom-32 right-16 animate-float2">
             <div className="px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-500/20 backdrop-blur-sm">
               <p className="text-violet-400 text-xs font-semibold">Savings</p>
-              <p className="text-white text-sm font-bold">15k RWF/day</p>
+              <p className="text-white text-sm font-bold">17.5k RWF/day</p>
             </div>
           </div>
 

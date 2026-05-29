@@ -222,7 +222,7 @@ export default function SavingsPage() {
             <PiggyBank className="w-6 h-6 text-emerald-500" /> Daily Savings
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Automatic 15,000 RWF daily savings from revenue
+            Automatic 17,500 RWF daily savings from revenue
           </p>
         </div>
         <div className="flex items-center gap-2">

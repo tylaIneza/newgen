@@ -1,6 +1,6 @@
 const prisma = require('../lib/prisma');
 
-const DAILY_SAVING_TARGET = 15000;
+const DAILY_SAVING_TARGET = 17500;
 
 // Create or update today's saving record.
 // force=true (manual trigger) always recalculates; force=false (scheduler) skips if exists.
@@ -15,7 +15,7 @@ async function processDailySaving(force = false) {
     FROM sales WHERE DATE(created_at) = CURDATE()`;
 
   const revenueToday     = parseFloat(revenueRow.revenue);
-  const amount           = DAILY_SAVING_TARGET;              // always 15,000
+  const amount           = DAILY_SAVING_TARGET;              // always 17,500
   const remainingRevenue = revenueToday - DAILY_SAVING_TARGET; // can be negative
 
   // Upsert: insert or update so re-triggering always reflects latest revenue
@@ -59,7 +59,7 @@ exports.getToday = async (req, res) => {
     ]);
     const revenueToday       = parseFloat(revenueRow.revenue);
     const savedAmount        = saving ? parseFloat(saving.amount) : 0;
-    const projectedSaving    = DAILY_SAVING_TARGET;                      // always 15,000
+    const projectedSaving    = DAILY_SAVING_TARGET;                      // always 17,500
     const projectedRemaining = revenueToday - DAILY_SAVING_TARGET;       // can be negative
 
     res.json({
@@ -225,7 +225,7 @@ exports.getDashboardStats = async (req, res) => {
 
     const revenueToday  = parseFloat(todayRevRow.revenue);
     const savedToday    = todaySaving ? parseFloat(todaySaving.amount) : 0;
-    const projSaving    = DAILY_SAVING_TARGET;                   // always 15,000
+    const projSaving    = DAILY_SAVING_TARGET;                   // always 17,500
     const projRemaining = revenueToday - DAILY_SAVING_TARGET;    // can be negative
 
     res.json({
