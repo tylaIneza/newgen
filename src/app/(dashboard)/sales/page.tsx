@@ -39,6 +39,7 @@ export default function SalesPage() {
   const [success,    setSuccess]    = useState('');
   const [query,      setQuery]      = useState('');
   const [viewSale,   setViewSale]   = useState<Sale | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const loadProducts = useCallback(async (silent = false) => {
     if (!silent) setRefreshing(true);
@@ -132,6 +133,20 @@ export default function SalesPage() {
       const res = await salesApi.getOne(id);
       setViewSale(res.data.sale);
     } catch { toast.error('Failed to load sale'); }
+  };
+
+  const handleDelete = async (sale: Sale) => {
+    if (!confirm(`Delete sale ${sale.invoice_number} (${formatCurrency(sale.total_amount)})?\n\nStock will be restored automatically.`)) return;
+    setDeletingId(sale.id);
+    try {
+      const r = await salesApi.remove(sale.id);
+      toast.success(r.data.message);
+      loadSales();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || 'Failed to delete sale');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -515,14 +530,30 @@ export default function SalesPage() {
                       <td className="px-4 py-3 text-xs" style={{ color: C.muted }}>{formatDateTime(s.created_at)}</td>
                       <td className="px-4 py-3 text-right font-black" style={{ color: '#60a5fa' }}>{formatCurrency(s.total_amount)}</td>
                       <td className="px-4 py-3 text-center">
-                        <button onClick={() => openView(s.id)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center mx-auto transition-all"
-                          style={{ color: C.dim }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(29,78,216,0.12)'; (e.currentTarget as HTMLElement).style.color = '#60a5fa'; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = C.dim; }}
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button onClick={() => openView(s.id)}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+                            style={{ color: C.dim }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(29,78,216,0.12)'; (e.currentTarget as HTMLElement).style.color = '#60a5fa'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = C.dim; }}
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          {isAdmin && (
+                            <button onClick={() => handleDelete(s)}
+                              disabled={deletingId === s.id}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-40"
+                              style={{ color: C.dim }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.12)'; (e.currentTarget as HTMLElement).style.color = '#f87171'; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = C.dim; }}
+                              title="Delete sale"
+                            >
+                              {deletingId === s.id
+                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                : <Trash2 className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

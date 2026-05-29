@@ -63,6 +63,7 @@ export const salesApi = {
   getOne: (id: number) => api.get(`/sales/${id}`),
   create: (data: object) => api.post('/sales', data),
   getDailySummary: (params?: object) => api.get('/sales/daily-summary', { params }),
+  remove: (id: number) => api.delete(`/sales/${id}`),
 };
 
 export const expensesApi = {

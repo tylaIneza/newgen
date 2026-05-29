@@ -197,6 +197,59 @@ exports.create = async (req, res) => {
   }
 };
 
+exports.deleteSale = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const sale = await prisma.sale.findUnique({
+      where:   { id },
+      include: { sale_items: true },
+    });
+    if (!sale) return res.status(404).json({ error: 'Sale not found' });
+
+    await prisma.$transaction(async (tx) => {
+      // Restore stock for each item
+      for (const item of sale.sale_items) {
+        const product = await tx.product.findUnique({ where: { id: item.product_id } });
+        if (product) {
+          const restoredQty = product.quantity + item.quantity;
+          await tx.product.update({
+            where: { id: item.product_id },
+            data:  { quantity: restoredQty },
+          });
+          await tx.stockMovement.create({
+            data: {
+              product_id:      item.product_id,
+              movement_type:   'RETURN',
+              quantity:        item.quantity,
+              quantity_before: product.quantity,
+              quantity_after:  restoredQty,
+              reference_type:  'SALE_DELETE',
+              reference_id:    id,
+              performed_by:    req.user.id,
+            },
+          });
+        }
+      }
+      await tx.sale.delete({ where: { id } });
+    });
+
+    await auditLog({
+      userId: req.user.id, userName: req.user.name, action: 'DELETE_SALE',
+      module: 'SALES', entityType: 'sale', entityId: id,
+      description: `Sale deleted: ${sale.invoice_number} — Total: ${sale.total_amount}`,
+      oldValues: { invoice_number: sale.invoice_number, total_amount: sale.total_amount },
+    });
+
+    const io = req.app.get('io');
+    if (io) io.to('dashboard').emit('sale_deleted', { id });
+
+    res.json({ message: `Sale ${sale.invoice_number} deleted and stock restored` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 exports.getDailySummary = async (req, res) => {
   try {
     const date     = req.query.date || new Date().toISOString().split('T')[0];
