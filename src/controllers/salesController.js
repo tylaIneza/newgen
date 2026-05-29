@@ -1,5 +1,6 @@
 const prisma = require('../lib/prisma');
 const { auditLog } = require('../middleware/audit');
+const { processDailySaving } = require('./savingsController');
 
 const generateInvoice = () => {
   const d = new Date();
@@ -242,6 +243,9 @@ exports.deleteSale = async (req, res) => {
 
     const io = req.app.get('io');
     if (io) io.to('dashboard').emit('sale_deleted', { id });
+
+    // Recalculate today's saving so it reflects the updated revenue
+    processDailySaving(true).catch(() => {});
 
     res.json({ message: `Sale ${sale.invoice_number} deleted and stock restored` });
   } catch (err) {
