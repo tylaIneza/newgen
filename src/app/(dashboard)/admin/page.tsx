@@ -40,6 +40,7 @@ export default function AdminDashboard() {
     projected_saving: number; remaining_revenue: number; saving_recorded: boolean;
     total_savings_month: number; days_saved_month: number;
     total_savings_year: number; days_saved_year: number;
+    total_spent_from_savings: number; savings_balance: number;
   } | null>(null);
 
   const fetchSavingsStats = useCallback(async () => {
@@ -241,6 +242,20 @@ export default function AdminDashboard() {
             <StatCard title="Savings This Year" value={savingsStats.total_savings_year} isCurrency
               icon={Zap} iconColor="text-amber-600" iconBg="bg-amber-100 dark:bg-amber-900/30"
               subtitle={`${savingsStats.days_saved_year} days saved`} />
+            <div className={`stat-card ${savingsStats.savings_balance < 0 ? 'border border-red-200 dark:border-red-800' : 'border border-emerald-200 dark:border-emerald-800'}`}>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${savingsStats.savings_balance < 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
+                <PiggyBank className={`w-5 h-5 ${savingsStats.savings_balance < 0 ? 'text-red-600' : 'text-emerald-600'}`} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Savings Balance</p>
+                <p className={`text-2xl font-bold mt-0.5 tabular-nums ${savingsStats.savings_balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  {savingsStats.savings_balance < 0 ? '-' : ''}{formatCurrency(Math.abs(savingsStats.savings_balance))}
+                </p>
+                {savingsStats.total_spent_from_savings > 0 && (
+                  <p className="text-xs text-gray-400 mt-1">{formatCurrency(savingsStats.total_spent_from_savings)} spent</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

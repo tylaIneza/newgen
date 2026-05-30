@@ -213,7 +213,7 @@ exports.getAll = async (req, res) => {
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    const [[todayRevRow], [monthStats], [yearStats], [todaySaving]] = await Promise.all([
+    const [[todayRevRow], [monthStats], [yearStats], [todaySaving], [spentRow]] = await Promise.all([
       prisma.$queryRaw`SELECT COALESCE(SUM(total_amount), 0) as revenue
         FROM sales WHERE DATE(created_at) = CURDATE()`,
       prisma.$queryRaw`SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(CASE WHEN amount > 0 THEN 1 END) as days_saved
@@ -221,12 +221,16 @@ exports.getDashboardStats = async (req, res) => {
       prisma.$queryRaw`SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(CASE WHEN amount > 0 THEN 1 END) as days_saved
         FROM savings WHERE YEAR(date) = YEAR(CURDATE())`,
       prisma.$queryRaw`SELECT id, amount FROM savings WHERE date = CURDATE() LIMIT 1`,
+      prisma.$queryRaw`SELECT COALESCE(SUM(amount), 0) as total_spent FROM expenses WHERE from_savings = TRUE`,
     ]);
 
-    const revenueToday  = parseFloat(todayRevRow.revenue);
-    const savedToday    = todaySaving ? parseFloat(todaySaving.amount) : 0;
-    const projSaving    = Math.min(DAILY_SAVING_TARGET, revenueToday); // actual money saved
-    const projRemaining = revenueToday - DAILY_SAVING_TARGET;         // deficit if negative
+    const revenueToday   = parseFloat(todayRevRow.revenue);
+    const savedToday     = todaySaving ? parseFloat(todaySaving.amount) : 0;
+    const projSaving     = Math.min(DAILY_SAVING_TARGET, revenueToday);
+    const projRemaining  = revenueToday - DAILY_SAVING_TARGET;
+    const totalSaved     = parseFloat(yearStats.total_saved);
+    const totalSpent     = parseFloat(spentRow.total_spent);
+    const savingsBalance = totalSaved - totalSpent;
 
     res.json({
       revenue_today:        revenueToday,
@@ -237,8 +241,10 @@ exports.getDashboardStats = async (req, res) => {
       saving_recorded:      !!todaySaving,
       total_savings_month:  parseFloat(monthStats.total_saved),
       days_saved_month:     Number(monthStats.days_saved),
-      total_savings_year:   parseFloat(yearStats.total_saved),
+      total_savings_year:   totalSaved,
       days_saved_year:      Number(yearStats.days_saved),
+      total_spent_from_savings: totalSpent,
+      savings_balance:      savingsBalance,
     });
   } catch (err) {
     console.error(err);

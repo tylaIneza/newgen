@@ -99,9 +99,12 @@ exports.getOne = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { title, amount, category_id, expense_date, description } = req.body;
+  const { title, amount, category_id, expense_date, description, from_savings = false } = req.body;
   if (!title || !amount || !category_id || !expense_date)
     return res.status(400).json({ error: 'Title, amount, category, and date are required' });
+
+  // Only admin can charge expenses to savings
+  const chargeSavings = from_savings && req.user.role === 'admin';
 
   try {
     const expense = await prisma.expense.create({
@@ -111,14 +114,15 @@ exports.create = async (req, res) => {
         category_id:  parseInt(category_id),
         expense_date: new Date(expense_date),
         description:  description || null,
+        from_savings: chargeSavings,
         created_by:   req.user.id,
       },
     });
     await auditLog({
       userId: req.user.id, userName: req.user.name, action: 'CREATE_EXPENSE',
       module: 'EXPENSES', entityType: 'expense', entityId: expense.id,
-      description: `Expense created: ${title} — ${amount}`,
-      newValues: { title, amount, category_id, expense_date },
+      description: `Expense created: ${title} — ${amount}${chargeSavings ? ' [from savings]' : ''}`,
+      newValues: { title, amount, category_id, expense_date, from_savings: chargeSavings },
     });
     res.status(201).json({ message: 'Expense recorded', id: expense.id });
   } catch (err) {

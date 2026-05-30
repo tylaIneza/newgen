@@ -217,6 +217,8 @@ model Expense {
   created_at   DateTime @default(now())
   updated_at   DateTime @default(now()) @updatedAt
 
+  from_savings Boolean  @default(false)
+
   category     ExpenseCategory      @relation(fields: [category_id], references: [id])
   creator      User                 @relation(fields: [created_by], references: [id])
   edit_requests ExpenseEditRequest[]

@@ -72,7 +72,7 @@ export default function SavingsPage() {
   const canSeeSavings = isAdmin || hasPermission('can_view_savings');
 
   const [tab, setTab]         = useState<'daily' | 'monthly' | 'yearly'>('daily');
-  const [stats, setStats]     = useState<DashStats | null>(null);
+  const [stats, setStats]     = useState<DashStats & { total_spent_from_savings?: number; savings_balance?: number } | null>(null);
   const [monthly, setMonthly] = useState<MonthlyData | null>(null);
   const [yearly, setYearly]   = useState<YearlyData | null>(null);
   const [records, setRecords] = useState<SavingRecord[]>([]);

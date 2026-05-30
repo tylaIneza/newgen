@@ -14,19 +14,19 @@ exports.getDashboard = async (req, res) => {
         FROM sales WHERE DATE(created_at) = CURDATE()`,
 
       prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total
-        FROM expenses WHERE expense_date = CURDATE()`,
+        FROM expenses WHERE expense_date = CURDATE() AND from_savings = FALSE`,
 
       prisma.$queryRaw`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions
         FROM sales WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)`,
 
       prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total
-        FROM expenses WHERE expense_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)`,
+        FROM expenses WHERE expense_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND from_savings = FALSE`,
 
       prisma.$queryRaw`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions
         FROM sales WHERE DATE(created_at) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')`,
 
       prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total
-        FROM expenses WHERE expense_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')`,
+        FROM expenses WHERE expense_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01') AND from_savings = FALSE`,
 
       prisma.$queryRaw`
         SELECT si.product_name, SUM(si.quantity) as qty_sold, SUM(si.line_total) as revenue
@@ -99,7 +99,7 @@ exports.getDashboard = async (req, res) => {
 
     const [allTimeRevenue, allTimeExpenses, allTimeCapital, allTimeSavings, todaySavingRow, monthlySavingRow] = await Promise.all([
       prisma.$queryRaw`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales`,
-      prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM expenses`,
+      prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE from_savings = FALSE`,
       prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM capital_injections`,
       prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM savings`,
       prisma.$queryRaw`SELECT COALESCE(SUM(amount),0) as total FROM savings WHERE date = CURDATE()`,
