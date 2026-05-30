@@ -103,8 +103,7 @@ exports.create = async (req, res) => {
   if (!title || !amount || !category_id || !expense_date)
     return res.status(400).json({ error: 'Title, amount, category, and date are required' });
 
-  // Only admin can charge expenses to savings
-  const chargeSavings = from_savings && req.user.role === 'admin';
+  const chargeSavings = !!from_savings;
 
   try {
     const expense = await prisma.expense.create({

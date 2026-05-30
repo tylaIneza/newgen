@@ -547,8 +547,8 @@ function ExpensesContent() {
               className="input h-20 resize-none" placeholder="Optional notes" />
           </div>
 
-          {/* Charge to Savings — admin only, add mode only */}
-          {isAdmin && modal === 'add' && (
+          {/* Charge to Savings — available to all roles when adding */}
+          {modal === 'add' && (
             <div
               onClick={() => setForm({ ...form, from_savings: !form.from_savings })}
               className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
