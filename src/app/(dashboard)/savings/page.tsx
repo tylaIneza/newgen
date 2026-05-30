@@ -147,7 +147,6 @@ export default function SavingsPage() {
   };
 
   const handleRecalculateAll = async () => {
-    if (!confirm('Recalculate all savings records using actual sales data for each day?')) return;
     setRecalculating(true);
     try {
       const r = await savingsApi.recalculateAll();
