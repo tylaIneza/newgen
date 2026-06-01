@@ -125,7 +125,8 @@ exports.create = async (req, res) => {
     });
     res.status(201).json({ message: 'Expense recorded', id: expense.id });
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('[Expense create error]', err);
+    res.status(500).json({ error: err.message || 'Server error' });
   }
 };
 

@@ -130,7 +130,7 @@ function ExpensesContent() {
     }
     const expYear = parseInt(form.expense_date.slice(0, 4));
     const thisYear = parseInt(todayRwanda().slice(0, 4));
-    if (expYear < thisYear - 1 || expYear > thisYear + 1) {
+    if (expYear < thisYear - 5 || expYear > thisYear + 1) {
       toast.error(`Expense date looks wrong (${expYear}) — please check the date`);
       return;
     }
