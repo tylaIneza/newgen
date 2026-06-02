@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import {
   PiggyBank, DollarSign, TrendingUp, Calendar, RefreshCw,
   Download, Filter, ChevronLeft, ChevronRight, Zap, Activity,
+  ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -41,6 +42,9 @@ interface DashStats {
   saving_recorded: boolean;
   total_savings_month: number;
   days_saved_month: number;
+  total_savings_last_month: number;
+  days_saved_last_month: number;
+  month_over_month_change: number | null;
   total_savings_year: number;
   days_saved_year: number;
 }
@@ -261,31 +265,85 @@ export default function SavingsPage() {
 
       {/* Top Stats */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <StatCard title="Revenue Today" value={stats.revenue_today} isCurrency
-            icon={DollarSign} iconColor="text-blue-700" iconBg="bg-blue-100 dark:bg-blue-900/30" />
-          <StatCard title="Daily Saving" value={stats.projected_saving} isCurrency
-            icon={PiggyBank} iconColor="text-emerald-600" iconBg="bg-emerald-100 dark:bg-emerald-900/30"
-            subtitle={`Target: ${formatCurrency(stats.daily_saving_target)}`} />
-          <div className={`stat-card ${stats.remaining_revenue < 0 ? 'border border-red-200 dark:border-red-800' : ''}`}>
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${stats.remaining_revenue < 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
-              <TrendingUp className={`w-5 h-5 ${stats.remaining_revenue < 0 ? 'text-red-600' : 'text-blue-600'}`} />
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard title="Revenue Today" value={stats.revenue_today} isCurrency
+              icon={DollarSign} iconColor="text-blue-700" iconBg="bg-blue-100 dark:bg-blue-900/30" />
+            <StatCard title="Daily Saving" value={stats.projected_saving} isCurrency
+              icon={PiggyBank} iconColor="text-emerald-600" iconBg="bg-emerald-100 dark:bg-emerald-900/30"
+              subtitle={`Target: ${formatCurrency(stats.daily_saving_target)}`} />
+            <div className={`stat-card ${stats.remaining_revenue < 0 ? 'border border-red-200 dark:border-red-800' : ''}`}>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${stats.remaining_revenue < 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+                <TrendingUp className={`w-5 h-5 ${stats.remaining_revenue < 0 ? 'text-red-600' : 'text-blue-600'}`} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Remaining Revenue</p>
+                <p className={`text-2xl font-bold tabular-nums mt-0.5 ${stats.remaining_revenue < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                  {stats.remaining_revenue < 0 ? '-' : ''}{formatCurrency(Math.abs(stats.remaining_revenue))}
+                </p>
+                {stats.remaining_revenue < 0 && <p className="text-xs text-red-500 mt-1 font-medium">⚠ Deficit</p>}
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Remaining Revenue</p>
-              <p className={`text-2xl font-bold tabular-nums mt-0.5 ${stats.remaining_revenue < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
-                {stats.remaining_revenue < 0 ? '-' : ''}{formatCurrency(Math.abs(stats.remaining_revenue))}
+            <StatCard title="Total This Year" value={stats.total_savings_year} isCurrency
+              icon={Calendar} iconColor="text-amber-600" iconBg="bg-amber-100 dark:bg-amber-900/30"
+              subtitle={`${stats.days_saved_year} days`} />
+          </div>
+
+          {/* Monthly Comparison */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Last Month */}
+            <div className="card p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <Activity className="w-5 h-5 text-gray-500" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Last Month</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 font-semibold">
+                    {MONTH_NAMES[(now.getMonth() + 11) % 12]}
+                  </p>
+                </div>
+              </div>
+              <p className="text-3xl font-extrabold tabular-nums text-gray-700 dark:text-gray-200">
+                {formatCurrency(stats.total_savings_last_month)}
               </p>
-              {stats.remaining_revenue < 0 && <p className="text-xs text-red-500 mt-1 font-medium">⚠ Deficit</p>}
+              <p className="text-xs text-gray-400 mt-1">{stats.days_saved_last_month} days saved</p>
+            </div>
+
+            {/* This Month */}
+            <div className="card p-5 border-2 border-emerald-200 dark:border-emerald-800">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                    <PiggyBank className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">This Month</p>
+                    <p className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
+                      {MONTH_NAMES[now.getMonth()]}
+                    </p>
+                  </div>
+                </div>
+                {stats.month_over_month_change !== null && (
+                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
+                    stats.month_over_month_change >= 0
+                      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                      : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                  }`}>
+                    {stats.month_over_month_change >= 0
+                      ? <ArrowUpRight className="w-3.5 h-3.5" />
+                      : <ArrowDownRight className="w-3.5 h-3.5" />}
+                    {Math.abs(stats.month_over_month_change).toFixed(1)}%
+                  </div>
+                )}
+              </div>
+              <p className="text-3xl font-extrabold tabular-nums text-emerald-600 dark:text-emerald-400">
+                {formatCurrency(stats.total_savings_month)}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">{stats.days_saved_month} days saved</p>
             </div>
           </div>
-          <StatCard title="Total This Month" value={stats.total_savings_month} isCurrency
-            icon={Activity} iconColor="text-violet-600" iconBg="bg-violet-100 dark:bg-violet-900/30"
-            subtitle={`${stats.days_saved_month} days`} />
-          <StatCard title="Total This Year" value={stats.total_savings_year} isCurrency
-            icon={Calendar} iconColor="text-amber-600" iconBg="bg-amber-100 dark:bg-amber-900/30"
-            subtitle={`${stats.days_saved_year} days`} />
-        </div>
+        </>
       )}
 
       {/* Today's saving banner */}

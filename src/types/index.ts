@@ -117,6 +117,7 @@ export interface ReportData {
   summary: {
     revenue: number;
     expenses: number;
+    savings: number;
     net_profit: number;
     transactions: number;
     profit_margin: string;
@@ -124,6 +125,7 @@ export interface ReportData {
   daily_trend: Array<{ date: string; revenue: number; transactions: number }>;
   top_products: Array<{ product_name: string; qty_sold: number; revenue: number }>;
   seller_performance: Array<{ seller_name: string; transactions: number; revenue: number }>;
+  monthly_savings: Array<{ month: number; total_saved: number; days_saved: number }>;
 }
 
 export interface PaginatedResponse<T> {

@@ -213,11 +213,14 @@ exports.getAll = async (req, res) => {
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    const [[todayRevRow], [monthStats], [yearStats], [todaySaving], [spentRow]] = await Promise.all([
+    const [[todayRevRow], [monthStats], [lastMonthStats], [yearStats], [todaySaving], [spentRow]] = await Promise.all([
       prisma.$queryRaw`SELECT COALESCE(SUM(total_amount), 0) as revenue
         FROM sales WHERE DATE(created_at) = CURDATE()`,
       prisma.$queryRaw`SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(CASE WHEN amount > 0 THEN 1 END) as days_saved
         FROM savings WHERE YEAR(date) = YEAR(CURDATE()) AND MONTH(date) = MONTH(CURDATE())`,
+      prisma.$queryRaw`SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(CASE WHEN amount > 0 THEN 1 END) as days_saved
+        FROM savings WHERE YEAR(date) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))
+          AND MONTH(date) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))`,
       prisma.$queryRaw`SELECT COALESCE(SUM(amount), 0) as total_saved, COUNT(CASE WHEN amount > 0 THEN 1 END) as days_saved
         FROM savings WHERE YEAR(date) = YEAR(CURDATE())`,
       prisma.$queryRaw`SELECT id, amount FROM savings WHERE date = CURDATE() LIMIT 1`,
@@ -232,6 +235,12 @@ exports.getDashboardStats = async (req, res) => {
     const totalSpent     = parseFloat(spentRow.total_spent);
     const savingsBalance = totalSaved - totalSpent;
 
+    const thisMonthSaved = parseFloat(monthStats.total_saved);
+    const lastMonthSaved = parseFloat(lastMonthStats.total_saved);
+    const monthChange    = lastMonthSaved > 0
+      ? ((thisMonthSaved - lastMonthSaved) / lastMonthSaved) * 100
+      : null;
+
     res.json({
       revenue_today:        revenueToday,
       daily_saving_target:  DAILY_SAVING_TARGET,
@@ -239,8 +248,11 @@ exports.getDashboardStats = async (req, res) => {
       projected_saving:     projSaving,
       remaining_revenue:    projRemaining,
       saving_recorded:      !!todaySaving,
-      total_savings_month:  parseFloat(monthStats.total_saved),
+      total_savings_month:  thisMonthSaved,
       days_saved_month:     Number(monthStats.days_saved),
+      total_savings_last_month:  lastMonthSaved,
+      days_saved_last_month:     Number(lastMonthStats.days_saved),
+      month_over_month_change:   monthChange,
       total_savings_year:   totalSaved,
       days_saved_year:      Number(yearStats.days_saved),
       total_spent_from_savings: totalSpent,

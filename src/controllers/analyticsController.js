@@ -159,7 +159,9 @@ exports.getReport = async (req, res) => {
 
     const sellerClause = seller_id ? `AND s.seller_id = ${parseInt(seller_id)}` : '';
 
-    const [salesSummary, expensesSummary, dailyTrend, topProducts, sellerPerformance] = await Promise.all([
+    const reportYear = parseInt(startDate.slice(0, 4));
+
+    const [salesSummary, expensesSummary, savingsSummary, dailyTrend, topProducts, sellerPerformance, monthlySavings] = await Promise.all([
       prisma.$queryRawUnsafe(`
         SELECT COALESCE(SUM(s.total_amount),0) as revenue, COUNT(DISTINCT s.id) as transactions
         FROM sales s WHERE DATE(s.created_at) BETWEEN ? AND ? ${sellerClause}`,
@@ -167,7 +169,11 @@ exports.getReport = async (req, res) => {
 
       prisma.$queryRaw`
         SELECT COALESCE(SUM(amount),0) as total_expenses
-        FROM expenses WHERE expense_date BETWEEN ${startDate} AND ${endDate}`,
+        FROM expenses WHERE expense_date BETWEEN ${startDate} AND ${endDate} AND from_savings = FALSE`,
+
+      prisma.$queryRaw`
+        SELECT COALESCE(SUM(amount),0) as total_savings
+        FROM savings WHERE date BETWEEN ${startDate} AND ${endDate}`,
 
       prisma.$queryRawUnsafe(`
         SELECT DATE(s.created_at) as date, COALESCE(SUM(s.total_amount),0) as revenue,
@@ -189,22 +195,36 @@ exports.getReport = async (req, res) => {
         WHERE DATE(s.created_at) BETWEEN ? AND ? ${sellerClause}
         GROUP BY s.seller_id, u.name ORDER BY revenue DESC`,
         startDate, endDate),
+
+      prisma.$queryRawUnsafe(`
+        SELECT MONTH(date) as month, COALESCE(SUM(amount),0) as total_saved,
+               COUNT(CASE WHEN amount > 0 THEN 1 END) as days_saved
+        FROM savings WHERE YEAR(date) = ?
+        GROUP BY MONTH(date) ORDER BY month ASC`,
+        reportYear),
     ]);
 
     const revenue  = parseFloat(salesSummary[0].revenue);
     const expenses = parseFloat(expensesSummary[0].total_expenses);
+    const savings  = parseFloat(savingsSummary[0].total_savings);
+    const netProfit = revenue - expenses - savings;
 
     res.json({
       period, start_date: startDate, end_date: endDate,
       summary: {
-        revenue, expenses,
-        net_profit:     revenue - expenses,
-        transactions:   salesSummary[0].transactions,
-        profit_margin:  revenue > 0 ? (((revenue - expenses) / revenue) * 100).toFixed(2) : 0,
+        revenue, expenses, savings,
+        net_profit:     netProfit,
+        transactions:   Number(salesSummary[0].transactions),
+        profit_margin:  revenue > 0 ? (((netProfit) / revenue) * 100).toFixed(2) : '0.00',
       },
       daily_trend:        dailyTrend,
       top_products:       topProducts,
       seller_performance: sellerPerformance,
+      monthly_savings:    monthlySavings.map(m => ({
+        month:       Number(m.month),
+        total_saved: parseFloat(m.total_saved),
+        days_saved:  Number(m.days_saved),
+      })),
     });
   } catch (err) {
     console.error(err);
