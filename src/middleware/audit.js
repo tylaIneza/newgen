@@ -1,7 +1,7 @@
 const prisma = require('../lib/prisma');
 
 const auditLog = async ({
-  userId, userName, action, module, entityType, entityId,
+  userId, userName, branchId, action, module, entityType, entityId,
   description, oldValues, newValues, ipAddress, userAgent,
 }) => {
   try {
@@ -9,6 +9,7 @@ const auditLog = async ({
       data: {
         user_id:     userId    || null,
         user_name:   userName  || null,
+        branch_id:   branchId  || null,
         action,
         module,
         entity_type: entityType || null,

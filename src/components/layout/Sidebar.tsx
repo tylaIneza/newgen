@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingCart, Package, DollarSign,
-  BarChart3, Users, ClipboardList, Zap, X, ChevronRight,
-  LogOut, CheckSquare, PiggyBank, Settings,
+  BarChart3, Users, ClipboardList, X, ChevronRight,
+  LogOut, CheckSquare, PiggyBank, Settings, GitBranch, Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,14 +14,15 @@ import toast from 'react-hot-toast';
 interface SidebarProps { open: boolean; onClose: () => void; }
 
 const adminLinks = [
-  { href: '/admin',     icon: LayoutDashboard, label: 'Dashboard',          exact: true },
-  { href: '/sales',     icon: ShoppingCart,    label: 'Sales' },
-  { href: '/products',  icon: Package,         label: 'Products & Stock' },
-  { href: '/savings',   icon: PiggyBank,       label: 'Daily Savings' },
-  { href: '/analytics', icon: BarChart3,       label: 'Analytics & Reports' },
-  { href: '/users',     icon: Users,           label: 'User Management' },
-  { href: '/audit',     icon: ClipboardList,   label: 'Audit Logs' },
-  { href: '/settings',  icon: Settings,        label: 'Settings' },
+  { href: '/admin',           icon: LayoutDashboard, label: 'Dashboard',          exact: true },
+  { href: '/sales',           icon: ShoppingCart,    label: 'Sales' },
+  { href: '/products',        icon: Package,         label: 'Products & Stock' },
+  { href: '/savings',         icon: PiggyBank,       label: 'Daily Savings' },
+  { href: '/analytics',       icon: BarChart3,       label: 'Analytics & Reports' },
+  { href: '/users',           icon: Users,           label: 'User Management' },
+  { href: '/admin/branches',  icon: GitBranch,       label: 'Branches' },
+  { href: '/audit',           icon: ClipboardList,   label: 'Audit Logs' },
+  { href: '/settings',        icon: Settings,        label: 'Settings' },
 ];
 
 const managerLinks = [

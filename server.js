@@ -26,7 +26,9 @@ const categoryRoutes = require('./src/routes/categories');
 const capitalRoutes  = require('./src/routes/capital');
 const savingsRoutes   = require('./src/routes/savings');
 const settingsRoutes  = require('./src/routes/settings');
+const branchRoutes    = require('./src/routes/branches');
 const { processDailySaving } = require('./src/controllers/savingsController');
+const prisma = require('./src/lib/prisma');
 
 nextApp.prepare().then(() => {
   const app = express();
@@ -72,8 +74,9 @@ nextApp.prepare().then(() => {
   app.use('/api/audit', auditRoutes);
   app.use('/api/categories', categoryRoutes);
   app.use('/api/capital', capitalRoutes);
-  app.use('/api/savings',  savingsRoutes);
-  app.use('/api/settings', settingsRoutes);
+  app.use('/api/savings',   savingsRoutes);
+  app.use('/api/settings',  settingsRoutes);
+  app.use('/api/branches',  branchRoutes);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -88,17 +91,20 @@ nextApp.prepare().then(() => {
 
   app.all('*', (req, res) => handle(req, res));
 
-  // Daily savings scheduler — runs once at startup, then checks every hour
+  // Daily savings scheduler — runs for every active branch, once at startup, then every hour
   async function scheduleDailySaving() {
     try {
-      const { created } = await processDailySaving();
-      if (created) console.log('[Savings] Daily saving recorded for', new Date().toDateString());
+      const branches = await prisma.branch.findMany({ where: { is_active: true }, select: { id: true, name: true } });
+      for (const branch of branches) {
+        const { created } = await processDailySaving(branch.id);
+        if (created) console.log(`[Savings] Daily saving recorded for branch "${branch.name}"`);
+      }
     } catch (e) {
       console.error('[Savings] Scheduler error:', e.message);
     }
   }
   scheduleDailySaving();
-  setInterval(scheduleDailySaving, 60 * 60 * 1000); // re-check every hour
+  setInterval(scheduleDailySaving, 60 * 60 * 1000);
 
   const PORT = process.env.PORT || 3000;
   server.listen(PORT, () => {

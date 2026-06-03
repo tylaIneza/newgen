@@ -1,8 +1,10 @@
 'use client';
-import { Menu, Sun, Moon } from 'lucide-react';
+import { Menu, Sun, Moon, GitBranch, ChevronDown } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
+import { useBranch } from '@/hooks/useBranch';
 import { cn } from '@/lib/utils';
+import { useState, useRef, useEffect } from 'react';
 
 interface HeaderProps {
   title: string;
@@ -10,8 +12,21 @@ interface HeaderProps {
 }
 
 export default function Header({ title, onMenuClick }: HeaderProps) {
-  const { isDark, toggle } = useTheme();
-  const { user, isAdmin }  = useAuth();
+  const { isDark, toggle }  = useTheme();
+  const { user, isAdmin }   = useAuth();
+  const { branches, selectedId, selectedBranch, selectBranch, isSuperAdmin, currentBranchName } = useBranch();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   return (
     <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 flex-shrink-0">
@@ -30,6 +45,62 @@ export default function Header({ title, onMenuClick }: HeaderProps) {
 
       {/* Right */}
       <div className="flex items-center gap-2">
+        {/* Branch selector — only for super-admin */}
+        {isSuperAdmin && (
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setDropdownOpen(o => !o)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+            >
+              <GitBranch className="w-4 h-4" />
+              <span className="max-w-[120px] truncate">{currentBranchName}</span>
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-1 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-50">
+                <button
+                  onClick={() => { selectBranch(null); setDropdownOpen(false); }}
+                  className={cn(
+                    'w-full text-left px-4 py-2.5 text-sm font-medium transition-colors',
+                    selectedId === null
+                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  )}
+                >
+                  All Branches
+                </button>
+                <div className="border-t border-gray-100 dark:border-gray-700" />
+                {branches.filter(b => b.is_active).map(b => (
+                  <button
+                    key={b.id}
+                    onClick={() => { selectBranch(b.id); setDropdownOpen(false); }}
+                    className={cn(
+                      'w-full text-left px-4 py-2.5 text-sm transition-colors',
+                      selectedId === b.id
+                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    )}
+                  >
+                    {b.name}
+                    {b.location && <span className="text-xs text-gray-400 ml-1">— {b.location}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Branch badge for regular users */}
+        {!isSuperAdmin && user?.branch_id && (
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-medium">
+            <GitBranch className="w-3.5 h-3.5" />
+            <span className="max-w-[100px] truncate">
+              {branches.find(b => b.id === user.branch_id)?.name || 'Branch'}
+            </span>
+          </div>
+        )}
+
         <button
           onClick={toggle}
           title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}

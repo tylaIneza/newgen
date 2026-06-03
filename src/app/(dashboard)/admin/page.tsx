@@ -11,7 +11,7 @@ import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 import {
   DollarSign, ShoppingCart, TrendingUp, TrendingDown, Package,
-  Users, AlertTriangle, Activity, ArrowRight, RefreshCw, Zap, Wallet, Plus, Trash2, PiggyBank,
+  Users, AlertTriangle, Activity, ArrowRight, RefreshCw, Zap, Wallet, Plus, Trash2, PiggyBank, GitBranch, MapPin,
 } from 'lucide-react';
 
 import {
@@ -20,11 +20,21 @@ import {
 } from 'recharts';
 import Link from 'next/link';
 
+interface BranchStat {
+  id: number; name: string; location: string | null;
+  user_count: number; product_count: number;
+  today_revenue: number; today_transactions: number;
+  monthly_revenue: number; monthly_transactions: number;
+  monthly_expenses: number; monthly_net: number;
+}
+
 export default function AdminDashboard() {
   const { user: currentUser, hasPermission } = useAuth();
   const isStrictAdmin  = currentUser?.role === 'admin';
+  const isSuperAdmin   = currentUser?.role === 'admin' && (currentUser?.branch_id === null || currentUser?.branch_id === undefined);
   const canSeeSavings  = isStrictAdmin || hasPermission('can_view_savings');
   const [data, setData] = useState<DashboardData | null>(null);
+  const [branchStats, setBranchStats] = useState<BranchStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [capitalModal, setCapitalModal] = useState(false);
@@ -54,8 +64,12 @@ export default function AdminDashboard() {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     try {
-      const res = await analyticsApi.getDashboard();
-      setData(res.data);
+      const [dashRes, branchRes] = await Promise.allSettled([
+        analyticsApi.getDashboard(),
+        analyticsApi.getBranchesOverview(),
+      ]);
+      if (dashRes.status === 'fulfilled')  setData(dashRes.value.data);
+      if (branchRes.status === 'fulfilled') setBranchStats(branchRes.value.data.branches || []);
     } catch {}
     finally {
       setLoading(false);
@@ -553,6 +567,74 @@ export default function AdminDashboard() {
           ) : <p className="text-sm text-gray-400 text-center py-8">No sales yet.</p>}
         </div>
       </div>
+
+      {/* Branches Overview — only for super-admin when branchStats are loaded */}
+      {isSuperAdmin && branchStats.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+              <GitBranch className="w-3.5 h-3.5 text-blue-500" /> Branches Performance — This Month
+            </h2>
+            <Link href="/admin/branches" className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium flex items-center gap-1">
+              Manage <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {branchStats.map(b => (
+              <div key={b.id} className="card p-5 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    {b.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900 dark:text-white truncate">{b.name}</p>
+                    {b.location && (
+                      <p className="text-xs text-gray-400 flex items-center gap-1 truncate">
+                        <MapPin className="w-3 h-3" />{b.location}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60 text-center">
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Revenue</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">
+                      {formatCurrency(b.monthly_revenue)}
+                    </p>
+                    <p className="text-[10px] text-gray-400">{b.monthly_transactions} sales</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60 text-center">
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Expenses</p>
+                    <p className="text-sm font-bold text-red-500 tabular-nums">
+                      {formatCurrency(b.monthly_expenses)}
+                    </p>
+                    <p className={`text-[10px] font-semibold ${b.monthly_net >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                      Net: {formatCurrency(b.monthly_net)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 text-center border-t border-gray-100 dark:border-gray-700 pt-3">
+                  <div className="flex-1">
+                    <p className="text-[10px] text-gray-400">Today</p>
+                    <p className="text-xs font-bold text-gray-900 dark:text-white">{formatCurrency(b.today_revenue)}</p>
+                    <p className="text-[10px] text-gray-400">{b.today_transactions} sales</p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] text-gray-400">Users</p>
+                    <p className="text-xs font-bold text-gray-900 dark:text-white">{b.user_count}</p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] text-gray-400">Products</p>
+                    <p className="text-xs font-bold text-gray-900 dark:text-white">{b.product_count}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Low Stock Alert */}
       {data.low_stock.length > 0 && (

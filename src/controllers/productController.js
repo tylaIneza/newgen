@@ -4,8 +4,10 @@ const { auditLog } = require('../middleware/audit');
 exports.getAll = async (req, res) => {
   try {
     const { search, low_stock, page = 1, limit = 50 } = req.query;
+    const branchId = req.user.effective_branch_id;
     const where = { is_active: true };
 
+    if (branchId !== null) where.branch_id = branchId;
     if (search) {
       where.OR = [
         { name:    { contains: search } },
@@ -13,7 +15,6 @@ exports.getAll = async (req, res) => {
         { barcode: { contains: search } },
       ];
     }
-    // low_stock filter is handled via $queryRaw below (field-vs-field comparison)
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
@@ -21,15 +22,15 @@ exports.getAll = async (req, res) => {
     let products, total;
 
     if (low_stock === 'true') {
-      // field-vs-field comparison (quantity <= low_stock_threshold) requires raw SQL
+      const branchClause = branchId !== null ? `AND branch_id = ${branchId}` : '';
       const [rows, countRows] = await Promise.all([
-        prisma.$queryRaw`
-          SELECT * FROM products
-          WHERE is_active = 1 AND quantity > 0 AND quantity <= low_stock_threshold
-          ORDER BY name LIMIT ${take} OFFSET ${skip}`,
-        prisma.$queryRaw`
-          SELECT COUNT(*) as total FROM products
-          WHERE is_active = 1 AND quantity > 0 AND quantity <= low_stock_threshold`,
+        prisma.$queryRawUnsafe(
+          `SELECT * FROM products WHERE is_active=1 AND quantity>0 AND quantity<=low_stock_threshold ${branchClause} ORDER BY name LIMIT ? OFFSET ?`,
+          take, skip
+        ),
+        prisma.$queryRawUnsafe(
+          `SELECT COUNT(*) as total FROM products WHERE is_active=1 AND quantity>0 AND quantity<=low_stock_threshold ${branchClause}`
+        ),
       ]);
       products = rows;
       total    = Number(countRows[0].total);
@@ -78,6 +79,9 @@ exports.create = async (req, res) => {
   const { name, sku, barcode, quantity = 0, wholesale_price = 0, low_stock_threshold = 5, unit, description } = req.body;
   if (!name) return res.status(400).json({ error: 'Product name is required' });
 
+  const branchId = req.user.effective_branch_id;
+  if (!branchId) return res.status(400).json({ error: 'Select a branch before adding a product' });
+
   try {
     const product = await prisma.product.create({
       data: {
@@ -89,6 +93,7 @@ exports.create = async (req, res) => {
         low_stock_threshold: parseInt(low_stock_threshold),
         unit:                unit      || 'piece',
         description:         description || null,
+        branch_id:           branchId,
         created_by:          req.user.id,
       },
     });
@@ -109,8 +114,8 @@ exports.create = async (req, res) => {
     }
 
     await auditLog({
-      userId: req.user.id, userName: req.user.name, action: 'CREATE_PRODUCT',
-      module: 'PRODUCTS', entityType: 'product', entityId: product.id,
+      userId: req.user.id, userName: req.user.name, branchId,
+      action: 'CREATE_PRODUCT', module: 'PRODUCTS', entityType: 'product', entityId: product.id,
       description: `Created product: ${name}`, newValues: req.body,
     });
 
@@ -209,6 +214,8 @@ exports.adjustStock = async (req, res) => {
 
 exports.importCSV = async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  const branchId = req.user.effective_branch_id;
+  if (!branchId) return res.status(400).json({ error: 'Select a branch before importing products' });
 
   const XLSX = require('xlsx');
   const ext  = req.file.originalname.split('.').pop().toLowerCase();
@@ -256,7 +263,7 @@ exports.importCSV = async (req, res) => {
       const product = await prisma.product.create({
         data: {
           name, sku, barcode, quantity, low_stock_threshold: threshold,
-          unit, description: desc, created_by: req.user.id,
+          unit, description: desc, branch_id: branchId, created_by: req.user.id,
         },
       });
 
@@ -283,10 +290,11 @@ exports.importCSV = async (req, res) => {
 };
 
 exports.getLowStock = async (req, res) => {
-  const products = await prisma.$queryRaw`
-    SELECT * FROM products
-    WHERE quantity > 0 AND quantity <= low_stock_threshold AND is_active = 1
-    ORDER BY (quantity / low_stock_threshold) ASC`;
+  const branchId = req.user.effective_branch_id;
+  const branchClause = branchId !== null ? `AND branch_id = ${branchId}` : '';
+  const products = await prisma.$queryRawUnsafe(
+    `SELECT * FROM products WHERE quantity>0 AND quantity<=low_stock_threshold AND is_active=1 ${branchClause} ORDER BY (quantity/low_stock_threshold) ASC`
+  );
   res.json({ products });
 };
 

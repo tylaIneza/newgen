@@ -1,76 +1,88 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { usersApi } from '@/lib/api';
+import { usersApi, branchesApi } from '@/lib/api';
 import { formatDateTime } from '@/lib/utils';
-import type { User } from '@/types';
+import type { User, Branch } from '@/types';
 import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import toast from 'react-hot-toast';
-import { Plus, Edit2, Trash2, Users, CheckCircle, XCircle, ShieldCheck, UserX, UserCheck } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, CheckCircle, ShieldCheck, UserX, UserCheck, GitBranch } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const PERMISSIONS = [
-  { id: 1, name: 'can_sell', label: 'Can Sell' },
-  { id: 2, name: 'can_view_reports', label: 'View Reports' },
-  { id: 3, name: 'can_manage_stock', label: 'Manage Stock' },
+  { id: 1, name: 'can_sell',            label: 'Can Sell' },
+  { id: 2, name: 'can_view_reports',    label: 'View Reports' },
+  { id: 3, name: 'can_manage_stock',    label: 'Manage Stock' },
   { id: 4, name: 'can_manage_expenses', label: 'Manage Expenses' },
-  { id: 5, name: 'can_export_reports', label: 'Export Reports' },
+  { id: 5, name: 'can_export_reports',  label: 'Export Reports' },
 ];
 
 const ROLES = [
-  { id: '2', label: 'Seller', description: 'Can sell products and view own stats' },
+  { id: '2', label: 'Seller',  description: 'Can sell products and view own stats' },
   { id: '3', label: 'Manager', description: 'Can approve expenses, view reports, manage stock' },
-  { id: '1', label: 'Admin', description: 'Full system access' },
+  { id: '1', label: 'Admin',   description: 'Full system access for their branch' },
 ];
 
 const emptyForm = {
-  name: '', email: '', password: '', role_id: '2', phone: '', permissions: [] as number[],
+  name: '', email: '', password: '', role_id: '2', phone: '',
+  permissions: [] as number[], branch_id: '',
 };
 
 export default function UsersPage() {
   const { user: currentUser } = useAuth();
   const isStrictAdmin = currentUser?.role === 'admin';
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const isSuperAdmin  = currentUser?.role === 'admin' && (currentUser?.branch_id === null || currentUser?.branch_id === undefined);
+
+  const [users,    setUsers]    = useState<User[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [modal,    setModal]    = useState<'add' | 'edit' | null>(null);
+  const [selected, setSelected] = useState<any>(null);
+  const [form,     setForm]     = useState(emptyForm);
+  const [saving,   setSaving]   = useState(false);
 
   if (currentUser && !isStrictAdmin) {
     return <p className="text-center text-gray-500 py-20">Access denied.</p>;
   }
 
-  const [modal, setModal] = useState<'add' | 'edit' | null>(null);
-  const [selected, setSelected] = useState<any>(null);
-  const [form, setForm] = useState(emptyForm);
-  const [saving, setSaving] = useState(false);
-
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await usersApi.getAll();
-      setUsers(res.data.users);
-    } catch { toast.error('Failed to load users'); }
+      const [usersRes, branchRes] = await Promise.all([
+        usersApi.getAll(),
+        branchesApi.getAll(),
+      ]);
+      setUsers(usersRes.data.users);
+      setBranches(branchRes.data.branches);
+    } catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
   const openAdd = () => {
-    setForm(emptyForm);
+    const defaultBranch = isSuperAdmin ? '' : String(currentUser?.branch_id ?? '');
+    setForm({ ...emptyForm, branch_id: defaultBranch });
     setSelected(null);
     setModal('add');
   };
 
   const openEdit = async (u: User) => {
     try {
-      const res = await usersApi.getOne(u.id);
+      const res  = await usersApi.getOne(u.id);
       const user = res.data.user;
       setSelected(user);
       const customPerms = user.permissions?.filter((p: any) => p.is_custom).map((p: any) => p.id) || [];
       setForm({
-        name: user.name, email: user.email, password: '',
-        role_id: String(user.role_id), phone: user.phone || '',
+        name:        user.name,
+        email:       user.email,
+        password:    '',
+        role_id:     String(user.role_id),
+        phone:       user.phone || '',
         permissions: customPerms,
+        branch_id:   user.branch_id != null ? String(user.branch_id) : '',
       });
       setModal('edit');
     } catch { toast.error('Failed to load user'); }
@@ -87,12 +99,18 @@ export default function UsersPage() {
 
   const handleSave = async () => {
     if (!form.name || !form.email || (modal === 'add' && !form.password)) {
-      toast.error('Name, email and password are required');
-      return;
+      toast.error('Name, email and password are required'); return;
+    }
+    if (isSuperAdmin && !form.branch_id) {
+      toast.error('Please assign this user to a branch'); return;
     }
     setSaving(true);
     try {
-      const payload = { ...form, role_id: parseInt(form.role_id) };
+      const payload: any = {
+        ...form,
+        role_id:   parseInt(form.role_id),
+        branch_id: form.branch_id ? parseInt(form.branch_id) : undefined,
+      };
       if (modal === 'add') {
         await usersApi.create(payload);
         toast.success('User created');
@@ -110,30 +128,28 @@ export default function UsersPage() {
 
   const handleDeactivate = async (id: number, name: string, isActive: boolean) => {
     if (id === currentUser?.id) { toast.error("Can't deactivate your own account"); return; }
-    const action = isActive ? 'deactivate' : 're-activate';
-    if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} user "${name}"?`)) return;
+    const label = isActive ? 'deactivate' : 're-activate';
+    if (!confirm(`${label.charAt(0).toUpperCase() + label.slice(1)} "${name}"?`)) return;
     try {
-      if (isActive) {
-        await usersApi.remove(id);
-        toast.success('User deactivated');
-      } else {
-        await usersApi.update(id, { is_active: true });
-        toast.success('User re-activated');
-      }
+      if (isActive) { await usersApi.remove(id); toast.success('User deactivated'); }
+      else          { await usersApi.update(id, { is_active: true }); toast.success('User re-activated'); }
       load();
-    } catch { toast.error(`Failed to ${action} user`); }
+    } catch { toast.error(`Failed to ${label} user`); }
   };
 
   const handlePermanentDelete = async (id: number, name: string) => {
     if (id === currentUser?.id) { toast.error("Can't delete your own account"); return; }
-    if (!confirm(`PERMANENTLY DELETE "${name}"?\n\nThis cannot be undone. The user will be removed from the system forever.`)) return;
+    if (!confirm(`PERMANENTLY DELETE "${name}"?\n\nThis cannot be undone.`)) return;
     try {
       await usersApi.permanentDelete(id);
       toast.success('User permanently deleted');
       load();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.error || 'Failed to delete user');
-    }
+    } catch (e: any) { toast.error(e?.response?.data?.error || 'Failed to delete user'); }
+  };
+
+  const getBranchLabel = (id: number | null | undefined) => {
+    if (id === null || id === undefined) return 'Super Admin';
+    return branches.find(b => b.id === id)?.name || `Branch #${id}`;
   };
 
   return (
@@ -166,29 +182,14 @@ export default function UsersPage() {
         </div>
         <div className="stat-card">
           <div className="w-11 h-11 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-            <ShieldCheck className="w-5 h-5 text-purple-600" />
+            <GitBranch className="w-5 h-5 text-purple-600" />
           </div>
           <div>
-            <p className="text-sm text-gray-500">Sellers</p>
-            <p className="text-2xl font-bold">{users.filter(u => u.role === 'seller').length}</p>
+            <p className="text-sm text-gray-500">Branches</p>
+            <p className="text-2xl font-bold">{branches.filter(b => b.is_active).length}</p>
           </div>
         </div>
       </div>
-
-      {/* Manager count row */}
-      {users.some(u => u.role === 'manager') && (
-        <div className="card p-4 flex items-center gap-3 border-l-4 border-amber-400">
-          <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-            <ShieldCheck className="w-4 h-4 text-amber-600" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              {users.filter(u => u.role === 'manager').length} Manager{users.filter(u => u.role === 'manager').length !== 1 ? 's' : ''}
-            </p>
-            <p className="text-xs text-gray-400">Can approve expenses and view analytics</p>
-          </div>
-        </div>
-      )}
 
       <div className="card overflow-hidden">
         {loading ? <LoadingSpinner /> : users.length === 0 ? (
@@ -201,6 +202,7 @@ export default function UsersPage() {
                 <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-gray-800">
                   <th className="text-left px-4 py-3 font-medium">User</th>
                   <th className="text-left px-4 py-3 font-medium">Role</th>
+                  <th className="text-left px-4 py-3 font-medium">Branch</th>
                   <th className="text-left px-4 py-3 font-medium">Status</th>
                   <th className="text-left px-4 py-3 font-medium">Last Login</th>
                   <th className="text-center px-4 py-3 font-medium">Actions</th>
@@ -221,17 +223,26 @@ export default function UsersPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge
-                        variant={u.role === 'admin' ? 'purple' : u.role === 'manager' ? 'warning' : 'info'}
-                        className="capitalize"
-                      >{u.role}</Badge>
+                      <Badge variant={u.role === 'admin' ? 'purple' : u.role === 'manager' ? 'warning' : 'info'} className="capitalize">
+                        {u.role}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <GitBranch className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                        <span className="text-gray-600 dark:text-gray-300 truncate max-w-[110px]">
+                          {getBranchLabel(u.branch_id)}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={u.is_active ? 'success' : 'danger'}>
                         {u.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">{u.last_login ? formatDateTime(u.last_login) : 'Never'}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {u.last_login ? formatDateTime(u.last_login) : 'Never'}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => openEdit(u)} title="Edit"
@@ -239,7 +250,7 @@ export default function UsersPage() {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         {u.id !== currentUser?.id && (<>
-                          <button onClick={() => handleDeactivate(u.id, u.name, u.is_active)}
+                          <button onClick={() => handleDeactivate(u.id, u.name, u.is_active!)}
                             title={u.is_active ? 'Deactivate' : 'Re-activate'}
                             className={`p-1.5 rounded-lg transition-colors ${u.is_active ? 'hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600' : 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600'}`}>
                             {u.is_active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
@@ -259,7 +270,7 @@ export default function UsersPage() {
         )}
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add / Edit Modal */}
       <Modal open={modal === 'add' || modal === 'edit'} onClose={() => setModal(null)}
         title={modal === 'add' ? 'Add User' : 'Edit User'} size="md"
         footer={
@@ -292,9 +303,41 @@ export default function UsersPage() {
             <div>
               <label className="label">Phone</label>
               <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
-                className="input" placeholder="+1 234 567 8900" />
+                className="input" placeholder="+250 7XX XXX XXX" />
             </div>
           </div>
+
+          {/* Branch assignment */}
+          <div>
+            <label className="label">Branch *</label>
+            {isSuperAdmin ? (
+              <select
+                value={form.branch_id}
+                onChange={e => setForm({ ...form, branch_id: e.target.value })}
+                className="input"
+              >
+                <option value="">— Select a branch —</option>
+                {branches.filter(b => b.is_active).map(b => (
+                  <option key={b.id} value={String(b.id)}>
+                    {b.name}{b.location ? ` — ${b.location}` : ''}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="input bg-gray-50 dark:bg-gray-800 cursor-not-allowed"
+                value={getBranchLabel(currentUser?.branch_id ?? null)}
+                disabled
+              />
+            )}
+            <p className="text-xs text-gray-400 mt-1">
+              {isSuperAdmin
+                ? 'The branch this user belongs to. They will only see data for that branch.'
+                : 'Users you create are automatically assigned to your branch.'}
+            </p>
+          </div>
+
+          {/* Role */}
           <div>
             <label className="label">Role</label>
             <div className="space-y-2 mt-1">
@@ -303,7 +346,7 @@ export default function UsersPage() {
                   className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                     form.role_id === r.id
                       ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                   }`}>
                   <input type="radio" name="role" value={r.id} checked={form.role_id === r.id}
                     onChange={() => setForm({ ...form, role_id: r.id, permissions: [] })}
@@ -316,6 +359,8 @@ export default function UsersPage() {
               ))}
             </div>
           </div>
+
+          {/* Extra permissions for sellers */}
           {form.role_id === '2' && (
             <div>
               <label className="label">Additional Permissions for Seller</label>

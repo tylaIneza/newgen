@@ -67,6 +67,7 @@ exports.login = async (req, res) => {
         name:        user.name,
         email:       user.email,
         role:        user.role.name,
+        branch_id:   user.branch_id,   // null = super-admin
         permissions: permissions.map(p => p.name),
         avatar_url:  user.avatar_url,
         last_login:  user.last_login,
@@ -95,14 +96,15 @@ exports.me = async (req, res) => {
     });
     res.json({
       user: {
-        id:         user.id,
-        name:       user.name,
-        email:      user.email,
-        phone:      user.phone,
-        avatar_url: user.avatar_url,
-        last_login: user.last_login,
-        created_at: user.created_at,
-        role:       user.role.name,
+        id:          user.id,
+        name:        user.name,
+        email:       user.email,
+        phone:       user.phone,
+        branch_id:   user.branch_id,
+        avatar_url:  user.avatar_url,
+        last_login:  user.last_login,
+        created_at:  user.created_at,
+        role:        user.role.name,
         permissions: req.user.permissions,
       },
     });

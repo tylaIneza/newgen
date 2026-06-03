@@ -9,10 +9,16 @@ export function useAuth() {
 
   useEffect(() => {
     const storedUser = sessionStorage.getItem('user');
-    const token = sessionStorage.getItem('token');
+    const token      = sessionStorage.getItem('token');
     if (storedUser && token) {
       try {
         setUser(JSON.parse(storedUser));
+        // Refresh from server to pick up any changes (e.g. branch_id)
+        authApi.me().then(({ data }) => {
+          const fresh = { ...JSON.parse(storedUser), ...data.user };
+          sessionStorage.setItem('user', JSON.stringify(fresh));
+          setUser(fresh);
+        }).catch(() => {});
       } catch {
         sessionStorage.removeItem('user');
         sessionStorage.removeItem('token');

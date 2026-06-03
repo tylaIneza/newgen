@@ -9,8 +9,10 @@ const canApprove = (user) =>
 exports.getAll = async (req, res) => {
   try {
     const { category_id, start_date, end_date, page = 1, limit = 20 } = req.query;
+    const branchId = req.user.effective_branch_id;
     const where = {};
 
+    if (branchId !== null) where.branch_id = branchId;
     if (req.user.role === 'seller') where.created_by = req.user.id;
     if (category_id) where.category_id  = parseInt(category_id);
     if (start_date)  where.expense_date = { ...where.expense_date, gte: new Date(start_date) };
@@ -103,6 +105,11 @@ exports.create = async (req, res) => {
   if (!title || !amount || !category_id || !expense_date)
     return res.status(400).json({ error: 'Title, amount, category, and date are required' });
 
+  const branchId = req.user.effective_branch_id;
+  if (branchId === null) {
+    return res.status(400).json({ error: 'Select a branch before recording an expense' });
+  }
+
   const chargeSavings = !!from_savings;
 
   try {
@@ -111,6 +118,7 @@ exports.create = async (req, res) => {
         title,
         amount:       parseFloat(amount),
         category_id:  parseInt(category_id),
+        branch_id:    branchId,
         expense_date: new Date(expense_date),
         description:  description || null,
         from_savings: chargeSavings,
@@ -118,8 +126,8 @@ exports.create = async (req, res) => {
       },
     });
     await auditLog({
-      userId: req.user.id, userName: req.user.name, action: 'CREATE_EXPENSE',
-      module: 'EXPENSES', entityType: 'expense', entityId: expense.id,
+      userId: req.user.id, userName: req.user.name, branchId,
+      action: 'CREATE_EXPENSE', module: 'EXPENSES', entityType: 'expense', entityId: expense.id,
       description: `Expense created: ${title} — ${amount}${chargeSavings ? ' [from savings]' : ''}`,
       newValues: { title, amount, category_id, expense_date, from_savings: chargeSavings },
     });
@@ -150,8 +158,8 @@ exports.update = async (req, res) => {
         },
       });
       await auditLog({
-        userId: req.user.id, userName: req.user.name, action: 'UPDATE_EXPENSE',
-        module: 'EXPENSES', entityType: 'expense', entityId: id,
+        userId: req.user.id, userName: req.user.name, branchId: old.branch_id,
+        action: 'UPDATE_EXPENSE', module: 'EXPENSES', entityType: 'expense', entityId: id,
         description: `Direct edit by ${req.user.role}: ${old.title}`,
         oldValues: old, newValues: req.body,
       });
@@ -176,8 +184,8 @@ exports.update = async (req, res) => {
     });
 
     await auditLog({
-      userId: req.user.id, userName: req.user.name, action: 'REQUEST_EXPENSE_EDIT',
-      module: 'EXPENSES', entityType: 'expense', entityId: id,
+      userId: req.user.id, userName: req.user.name, branchId: old.branch_id,
+      action: 'REQUEST_EXPENSE_EDIT', module: 'EXPENSES', entityType: 'expense', entityId: id,
       description: `Edit request submitted for: ${old.title}`,
       newValues: proposed,
     });
@@ -196,12 +204,12 @@ exports.update = async (req, res) => {
 exports.remove = async (req, res) => {
   const id = parseInt(req.params.id);
   try {
-    const old = await prisma.expense.findUnique({ where: { id }, select: { title: true } });
+    const old = await prisma.expense.findUnique({ where: { id }, select: { title: true, branch_id: true } });
     if (!old) return res.status(404).json({ error: 'Expense not found' });
     await prisma.expense.delete({ where: { id } });
     await auditLog({
-      userId: req.user.id, userName: req.user.name, action: 'DELETE_EXPENSE',
-      module: 'EXPENSES', entityType: 'expense', entityId: id,
+      userId: req.user.id, userName: req.user.name, branchId: old.branch_id,
+      action: 'DELETE_EXPENSE', module: 'EXPENSES', entityType: 'expense', entityId: id,
       description: `Deleted expense: ${old.title}`,
     });
     res.json({ message: 'Expense deleted' });
@@ -222,8 +230,12 @@ exports.getApprovalRequests = async (req, res) => {
     const { status = 'pending', page = 1, limit = 30 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
+    const branchId = req.user.effective_branch_id;
 
-    const where = { status };
+    const where = {
+      status,
+      ...(branchId !== null ? { expense: { branch_id: branchId } } : {}),
+    };
 
     const [requests, total] = await Promise.all([
       prisma.expenseEditRequest.findMany({

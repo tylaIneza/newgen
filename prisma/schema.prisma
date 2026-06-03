@@ -8,6 +8,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Branch {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique @db.VarChar(100)
+  location   String?  @db.VarChar(255)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  users              User[]
+  products           Product[]
+  sales              Sale[]
+  expenses           Expense[]
+  capital_injections CapitalInjection[]
+  savings            Saving[]
+  audit_logs         AuditLog[]
+
+  @@map("branches")
+}
+
 model Role {
   id          Int      @id @default(autoincrement())
   name        String   @unique @db.VarChar(50)
@@ -49,6 +67,7 @@ model User {
   email         String    @unique @db.VarChar(150)
   password_hash String    @db.VarChar(255)
   role_id       Int
+  branch_id     Int?
   is_active     Boolean   @default(true)
   avatar_url    String?   @db.VarChar(255)
   phone         String?   @db.VarChar(20)
@@ -57,6 +76,7 @@ model User {
   updated_at    DateTime  @default(now()) @updatedAt
 
   role             Role             @relation(fields: [role_id], references: [id])
+  branch           Branch?          @relation(fields: [branch_id], references: [id], onDelete: SetNull)
   user_permissions UserPermission[]
   products         Product[]        @relation("CreatedByUser")
   sales            Sale[]
@@ -68,6 +88,7 @@ model User {
   expense_edit_requests_reviewed  ExpenseEditRequest[] @relation("ReviewedByUser")
   capital_injections CapitalInjection[]
 
+  @@index([branch_id])
   @@map("users")
 }
 
@@ -88,7 +109,7 @@ model UserPermission {
 model Product {
   id                  Int      @id @default(autoincrement())
   name                String   @db.VarChar(200)
-  sku                 String?  @unique @db.VarChar(100)
+  sku                 String?  @db.VarChar(100)
   barcode             String?  @db.VarChar(100)
   quantity            Int      @default(0)
   wholesale_price     Decimal  @default(0) @db.Decimal(12, 2)
@@ -97,16 +118,19 @@ model Product {
   description         String?  @db.Text
   image_url           String?  @db.VarChar(255)
   is_active           Boolean  @default(true)
+  branch_id           Int      @default(1)
   created_by          Int?
   created_at          DateTime @default(now())
   updated_at          DateTime @default(now()) @updatedAt
 
   creator         User?           @relation("CreatedByUser", fields: [created_by], references: [id])
+  branch          Branch          @relation(fields: [branch_id], references: [id], onDelete: Cascade)
   stock_movements StockMovement[]
   sale_items      SaleItem[]
 
-  @@index([sku])
+  @@unique([sku, branch_id])
   @@index([barcode])
+  @@index([branch_id])
   @@map("products")
 }
 
@@ -142,6 +166,7 @@ model Sale {
   id             Int           @id @default(autoincrement())
   invoice_number String        @unique @db.VarChar(50)
   seller_id      Int
+  branch_id      Int           @default(1)
   customer_name  String?       @db.VarChar(150)
   customer_phone String?       @db.VarChar(20)
   subtotal       Decimal       @default(0) @db.Decimal(12, 2)
@@ -154,9 +179,11 @@ model Sale {
   updated_at     DateTime      @default(now()) @updatedAt
 
   seller     User       @relation(fields: [seller_id], references: [id])
+  branch     Branch     @relation(fields: [branch_id], references: [id], onDelete: Cascade)
   sale_items SaleItem[]
 
   @@index([seller_id])
+  @@index([branch_id])
   @@index([created_at])
   @@index([invoice_number])
   @@map("sales")
@@ -210,6 +237,7 @@ model Expense {
   title        String   @db.VarChar(200)
   amount       Decimal  @db.Decimal(12, 2)
   category_id  Int
+  branch_id    Int      @default(1)
   expense_date DateTime @db.Date
   description  String?  @db.Text
   receipt_url  String?  @db.VarChar(255)
@@ -220,11 +248,13 @@ model Expense {
   from_savings Boolean  @default(false)
 
   category     ExpenseCategory      @relation(fields: [category_id], references: [id])
+  branch       Branch               @relation(fields: [branch_id], references: [id], onDelete: Cascade)
   creator      User                 @relation(fields: [created_by], references: [id])
   edit_requests ExpenseEditRequest[]
 
   @@index([expense_date])
   @@index([category_id])
+  @@index([branch_id])
   @@map("expenses")
 }
 
@@ -260,12 +290,15 @@ model CapitalInjection {
   amount      Decimal  @db.Decimal(12, 2)
   description String?  @db.VarChar(255)
   date        DateTime @db.Date
+  branch_id   Int      @default(1)
   added_by    Int
   created_at  DateTime @default(now())
 
-  admin User @relation(fields: [added_by], references: [id])
+  admin  User   @relation(fields: [added_by], references: [id])
+  branch Branch @relation(fields: [branch_id], references: [id], onDelete: Cascade)
 
   @@index([date])
+  @@index([branch_id])
   @@map("capital_injections")
 }
 
@@ -275,10 +308,14 @@ model Saving {
   revenue_today     Decimal  @db.Decimal(12, 2)
   remaining_revenue Decimal  @db.Decimal(12, 2)
   date              DateTime @db.Date
+  branch_id         Int      @default(1)
   created_at        DateTime @default(now())
 
-  @@unique([date])
+  branch Branch @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+
+  @@unique([date, branch_id])
   @@index([date])
+  @@index([branch_id])
   @@map("savings")
 }
 
@@ -286,6 +323,7 @@ model AuditLog {
   id          Int      @id @default(autoincrement())
   user_id     Int?
   user_name   String?  @db.VarChar(100)
+  branch_id   Int?
   action      String   @db.VarChar(100)
   module      String   @db.VarChar(50)
   entity_type String?  @db.VarChar(50)
@@ -297,9 +335,11 @@ model AuditLog {
   user_agent  String?  @db.VarChar(255)
   created_at  DateTime @default(now())
 
-  user User? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  branch Branch? @relation(fields: [branch_id], references: [id], onDelete: SetNull)
 
   @@index([user_id])
+  @@index([branch_id])
   @@index([action])
   @@index([module])
   @@index([created_at])

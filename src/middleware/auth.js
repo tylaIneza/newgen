@@ -30,14 +30,25 @@ const authenticate = async (req, res, next) => {
       select: { name: true },
     });
 
+    // Resolve effective branch:
+    // - Regular users: their branch_id (always scoped)
+    // - Super-admin (branch_id=null): use X-Branch-Id header, or null (all branches)
+    let effectiveBranchId = user.branch_id;
+    if (user.branch_id === null) {
+      const headerVal = parseInt(req.headers['x-branch-id']);
+      effectiveBranchId = isNaN(headerVal) ? null : headerVal;
+    }
+
     req.user = {
-      id:          user.id,
-      name:        user.name,
-      email:       user.email,
-      role_id:     user.role_id,
-      is_active:   user.is_active,
-      role:        user.role.name,
-      permissions: permissions.map(p => p.name),
+      id:                  user.id,
+      name:                user.name,
+      email:               user.email,
+      role_id:             user.role_id,
+      is_active:           user.is_active,
+      role:                user.role.name,
+      branch_id:           user.branch_id,       // null = super-admin
+      effective_branch_id: effectiveBranchId,    // null = all branches (super-admin, no filter)
+      permissions:         permissions.map(p => p.name),
     };
     next();
   } catch (err) {

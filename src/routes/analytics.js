@@ -3,9 +3,10 @@ const { authenticate, requireAdminOrManager, requirePermission } = require('../m
 const ctrl = require('../controllers/analyticsController');
 
 router.use(authenticate);
-router.get('/dashboard', requireAdminOrManager, ctrl.getDashboard);
-router.get('/seller-dashboard', ctrl.getSellerDashboard);
-router.get('/sellers', requireAdminOrManager, ctrl.getSellers);
-router.get('/report', requirePermission('can_view_reports'), ctrl.getReport);
+router.get('/dashboard',          requireAdminOrManager,                  ctrl.getDashboard);
+router.get('/branches-overview',  requireAdminOrManager,                  ctrl.getBranchesOverview);
+router.get('/seller-dashboard',                                           ctrl.getSellerDashboard);
+router.get('/sellers',            requireAdminOrManager,                  ctrl.getSellers);
+router.get('/report',             requirePermission('can_view_reports'),  ctrl.getReport);
 
 module.exports = router;

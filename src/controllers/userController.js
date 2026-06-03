@@ -4,8 +4,12 @@ const { auditLog } = require('../middleware/audit');
 
 exports.getAll = async (req, res) => {
   try {
+    const branchId = req.user.effective_branch_id;
+    const where = branchId !== null ? { branch_id: branchId } : {};
+
     const users = await prisma.user.findMany({
-      include: { role: true },
+      where,
+      include: { role: true, branch: { select: { name: true } } },
       orderBy: { created_at: 'desc' },
     });
     res.json({
@@ -13,6 +17,7 @@ exports.getAll = async (req, res) => {
         id: u.id, name: u.name, email: u.email, phone: u.phone,
         is_active: u.is_active, last_login: u.last_login,
         created_at: u.created_at, role: u.role.name,
+        branch_id: u.branch_id, branch_name: u.branch?.name || null,
       })),
     });
   } catch (err) {
@@ -46,6 +51,7 @@ exports.getOne = async (req, res) => {
         id: user.id, name: user.name, email: user.email, phone: user.phone,
         is_active: user.is_active, last_login: user.last_login,
         created_at: user.created_at, role: user.role.name, role_id: user.role_id,
+        branch_id: user.branch_id,
         permissions,
       },
     });
@@ -55,10 +61,17 @@ exports.getOne = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { name, email, password, role_id, phone, permissions = [] } = req.body;
+  const { name, email, password, role_id, phone, permissions = [], branch_id } = req.body;
   if (!name || !email || !password || !role_id) {
     return res.status(400).json({ error: 'Name, email, password, and role are required' });
   }
+
+  // Super-admin (branch_id=null) can create users for any branch.
+  // Branch-scoped admin can only create users for their own branch.
+  const creatorBranchId = req.user.branch_id;
+  const assignedBranchId = creatorBranchId !== null
+    ? creatorBranchId
+    : (branch_id ? parseInt(branch_id) : null);
 
   try {
     const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
@@ -71,6 +84,7 @@ exports.create = async (req, res) => {
         email:         email.toLowerCase().trim(),
         password_hash: hash,
         role_id:       parseInt(role_id),
+        branch_id:     assignedBranchId,
         phone:         phone || null,
         user_permissions: permissions.length
           ? { create: permissions.map(pid => ({ permission_id: parseInt(pid), granted_by: req.user.id })) }
@@ -92,7 +106,7 @@ exports.create = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-  const { name, email, phone, role_id, is_active, permissions, password } = req.body;
+  const { name, email, phone, role_id, is_active, permissions, password, branch_id } = req.body;
   const id = parseInt(req.params.id);
 
   try {
@@ -106,6 +120,11 @@ exports.update = async (req, res) => {
       role_id:   role_id   ? parseInt(role_id) : old.role_id,
       is_active: is_active !== undefined ? is_active : old.is_active,
     };
+
+    // Only super-admin can change branch assignments
+    if (branch_id !== undefined && req.user.branch_id === null) {
+      data.branch_id = branch_id === null ? null : parseInt(branch_id);
+    }
 
     if (password) {
       if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });

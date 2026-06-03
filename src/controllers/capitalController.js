@@ -3,7 +3,11 @@ const { auditLog } = require('../middleware/audit');
 
 exports.getAll = async (req, res) => {
   try {
+    const branchId = req.user.effective_branch_id;
+    const where = branchId !== null ? { branch_id: branchId } : {};
+
     const injections = await prisma.capitalInjection.findMany({
+      where,
       orderBy: { date: 'desc' },
       include: { admin: { select: { name: true } } },
     });
@@ -20,19 +24,23 @@ exports.add = async (req, res) => {
     return res.status(400).json({ error: 'A valid positive amount is required' });
   }
 
+  const branchId = req.user.effective_branch_id;
+  if (!branchId) return res.status(400).json({ error: 'Select a branch first' });
+
   try {
     const injection = await prisma.capitalInjection.create({
       data: {
         amount:      parseFloat(amount),
         description: description || null,
         date:        date ? new Date(date) : new Date(),
+        branch_id:   branchId,
         added_by:    req.user.id,
       },
     });
 
     await auditLog({
-      userId: req.user.id, userName: req.user.name, action: 'CAPITAL_INJECTION',
-      module: 'CAPITAL', entityType: 'capital_injection', entityId: injection.id,
+      userId: req.user.id, userName: req.user.name, branchId,
+      action: 'CAPITAL_INJECTION', module: 'CAPITAL', entityType: 'capital_injection', entityId: injection.id,
       description: `Added capital: ${amount}${description ? ` — ${description}` : ''}`,
       newValues: { amount, description, date },
     });

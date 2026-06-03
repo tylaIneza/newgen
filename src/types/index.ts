@@ -1,14 +1,27 @@
+export interface Branch {
+  id: number;
+  name: string;
+  location?: string;
+  is_active: boolean;
+  created_at?: string;
+  user_count?: number;
+  sale_count?: number;
+  product_count?: number;
+}
+
 export interface User {
   id: number;
   name: string;
   email: string;
   role: 'admin' | 'manager' | 'seller';
+  branch_id: number | null; // null = super-admin (no branch restriction)
   permissions: string[];
   avatar_url?: string;
   phone?: string;
   is_active?: boolean;
   last_login?: string;
   created_at?: string;
+  branch_name?: string;
 }
 
 export interface Product {
