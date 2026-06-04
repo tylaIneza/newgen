@@ -11,9 +11,9 @@ exports.getDashboard = async (req, res) => {
   try {
     const bid = req.user.effective_branch_id; // null = all branches
     const bs  = bSql(bid, 's');   // sales alias
-    const be  = bSql(bid, 'e');   // expenses alias
+    const be  = bSql(bid, 'e');   // expenses aliased as 'e' (only for expense_breakdown join)
     const bu  = bSql(bid, 'u');   // users alias (branch of user)
-    const bRaw= bSql(bid, null);  // no alias (savings, capital)
+    const bRaw= bSql(bid, null);  // no alias (savings, capital, direct expense queries)
 
     const [
       todaySales, todayExpenses,
@@ -24,11 +24,11 @@ exports.getDashboard = async (req, res) => {
       stockStats, recentSales, sellerBreakdown, userAnalytics,
     ] = await Promise.all([
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales WHERE DATE(created_at) = CURDATE() ${bs}`),
-      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE expense_date = CURDATE() AND from_savings = FALSE ${be}`),
+      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE expense_date = CURDATE() AND from_savings = FALSE ${bRaw}`),
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) ${bs}`),
-      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE expense_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND from_savings = FALSE ${be}`),
+      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE expense_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND from_savings = FALSE ${bRaw}`),
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales WHERE DATE(created_at) >= DATE_FORMAT(CURDATE(),'%Y-%m-01') ${bs}`),
-      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE expense_date >= DATE_FORMAT(CURDATE(),'%Y-%m-01') AND from_savings = FALSE ${be}`),
+      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE expense_date >= DATE_FORMAT(CURDATE(),'%Y-%m-01') AND from_savings = FALSE ${bRaw}`),
 
       prisma.$queryRawUnsafe(`
         SELECT si.product_name, SUM(si.quantity) as qty_sold, SUM(si.line_total) as revenue
@@ -70,9 +70,9 @@ exports.getDashboard = async (req, res) => {
                COUNT(DISTINCT s.id) AS transactions,
                COALESCE(SUM(s.total_amount),0) AS revenue,
                (SELECT COALESCE(SUM(amount),0) FROM expenses
-                WHERE created_by = u.id AND expense_date >= DATE_FORMAT(CURDATE(),'%Y-%m-01') ${be}) AS expenses,
+                WHERE created_by = u.id AND expense_date >= DATE_FORMAT(CURDATE(),'%Y-%m-01') ${bRaw}) AS expenses,
                (SELECT COUNT(*) FROM expenses
-                WHERE created_by = u.id AND expense_date >= DATE_FORMAT(CURDATE(),'%Y-%m-01') ${be}) AS expense_count
+                WHERE created_by = u.id AND expense_date >= DATE_FORMAT(CURDATE(),'%Y-%m-01') ${bRaw}) AS expense_count
         FROM users u
         LEFT JOIN sales s ON u.id = s.seller_id AND DATE(s.created_at) >= DATE_FORMAT(CURDATE(),'%Y-%m-01') ${bs}
         WHERE u.role_id = 2 AND u.is_active = 1 ${bu}
@@ -87,9 +87,9 @@ exports.getDashboard = async (req, res) => {
           COALESCE(SUM(CASE WHEN DATE(s.created_at)>=DATE_FORMAT(CURDATE(),'%Y-%m-01') THEN s.total_amount END),0) AS monthly_revenue,
           COUNT(CASE WHEN DATE(s.created_at)>=DATE_FORMAT(CURDATE(),'%Y-%m-01') THEN 1 END) AS monthly_sales,
           COALESCE(SUM(s.total_amount),0) AS total_revenue, COUNT(s.id) AS total_sales,
-          (SELECT COALESCE(SUM(amount),0) FROM expenses WHERE created_by=u.id AND expense_date=CURDATE() ${be}) AS today_expenses,
-          (SELECT COALESCE(SUM(amount),0) FROM expenses WHERE created_by=u.id AND expense_date>=DATE_SUB(CURDATE(),INTERVAL 7 DAY) ${be}) AS weekly_expenses,
-          (SELECT COALESCE(SUM(amount),0) FROM expenses WHERE created_by=u.id AND expense_date>=DATE_FORMAT(CURDATE(),'%Y-%m-01') ${be}) AS monthly_expenses
+          (SELECT COALESCE(SUM(amount),0) FROM expenses WHERE created_by=u.id AND expense_date=CURDATE() ${bRaw}) AS today_expenses,
+          (SELECT COALESCE(SUM(amount),0) FROM expenses WHERE created_by=u.id AND expense_date>=DATE_SUB(CURDATE(),INTERVAL 7 DAY) ${bRaw}) AS weekly_expenses,
+          (SELECT COALESCE(SUM(amount),0) FROM expenses WHERE created_by=u.id AND expense_date>=DATE_FORMAT(CURDATE(),'%Y-%m-01') ${bRaw}) AS monthly_expenses
         FROM users u LEFT JOIN sales s ON u.id = s.seller_id ${bs}
         WHERE u.role_id = 2 AND u.is_active = 1 ${bu}
         GROUP BY u.id, u.name ORDER BY monthly_revenue DESC`),
@@ -97,7 +97,7 @@ exports.getDashboard = async (req, res) => {
 
     const [allTimeRevenue, allTimeExpenses, allTimeCapital, allTimeSavings, todaySavingRow, monthlySavingRow] = await Promise.all([
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales WHERE 1=1 ${bs}`),
-      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE from_savings=FALSE ${be}`),
+      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE from_savings=FALSE ${bRaw}`),
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM capital_injections WHERE 1=1 ${bSql(bid,'')}`),
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM savings WHERE 1=1 ${bRaw}`),
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM savings WHERE date=CURDATE() ${bRaw}`),

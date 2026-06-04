@@ -409,7 +409,7 @@ export default function SavingsPage() {
             </div>
             <input type="date" value={filterDate}
               onChange={e => { setFilterDate(e.target.value); setPage(1); }}
-              className="input-field text-sm h-9 w-44" />
+              className="input text-sm h-9 w-44" />
             {filterDate && (
               <button onClick={() => { setFilterDate(''); setPage(1); }}
                 className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
@@ -512,13 +512,13 @@ export default function SavingsPage() {
           {/* Month/Year selector */}
           <div className="flex items-center gap-3 flex-wrap">
             <select value={selMonth} onChange={e => setSelMonth(Number(e.target.value))}
-              className="input-field text-sm h-9 w-36">
+              className="input text-sm h-9 w-36">
               {MONTH_NAMES.map((m, i) => (
                 <option key={i} value={i + 1}>{m}</option>
               ))}
             </select>
             <select value={selYear} onChange={e => setSelYear(Number(e.target.value))}
-              className="input-field text-sm h-9 w-28">
+              className="input text-sm h-9 w-28">
               {Array.from({ length: 5 }, (_, i) => now.getFullYear() - i).map(y => (
                 <option key={y} value={y}>{y}</option>
               ))}
@@ -615,7 +615,7 @@ export default function SavingsPage() {
           {/* Year selector */}
           <div className="flex items-center gap-3">
             <select value={selYear} onChange={e => setSelYear(Number(e.target.value))}
-              className="input-field text-sm h-9 w-28">
+              className="input text-sm h-9 w-28">
               {Array.from({ length: 5 }, (_, i) => now.getFullYear() - i).map(y => (
                 <option key={y} value={y}>{y}</option>
               ))}

@@ -17,6 +17,7 @@ const adminLinks = [
   { href: '/admin',           icon: LayoutDashboard, label: 'Dashboard',          exact: true },
   { href: '/sales',           icon: ShoppingCart,    label: 'Sales' },
   { href: '/products',        icon: Package,         label: 'Products & Stock' },
+  { href: '/expenses',        icon: DollarSign,      label: 'Expenses' },
   { href: '/savings',         icon: PiggyBank,       label: 'Daily Savings' },
   { href: '/analytics',       icon: BarChart3,       label: 'Analytics & Reports' },
   { href: '/users',           icon: Users,           label: 'User Management' },
@@ -41,13 +42,15 @@ const sellerLinks = [
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname        = usePathname();
-  const { user, logout, isAdmin, hasPermission } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const router          = useRouter();
+  const isStrictAdmin   = user?.role === 'admin';
   const isManager       = user?.role === 'manager';
-  const canApprove      = isAdmin || isManager || hasPermission('can_approve_expenses');
-  const canViewSavings  = isAdmin || hasPermission('can_view_savings');
+  const isAdminOrMgr    = isStrictAdmin || isManager;
+  const canApprove      = isAdminOrMgr || hasPermission('can_approve_expenses');
+  const canViewSavings  = isStrictAdmin || hasPermission('can_view_savings');
 
-  const links = isAdmin ? adminLinks : isManager ? managerLinks : sellerLinks;
+  const links = isStrictAdmin ? adminLinks : isManager ? managerLinks : sellerLinks;
 
   const handleLogout = async () => {
     await logout();
@@ -58,8 +61,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const isActive = (href: string, exact = false) =>
     exact ? pathname === href : pathname.startsWith(href);
 
-  const roleBadge = isAdmin ? 'Admin' : isManager ? 'Manager' : 'Seller';
-  const roleColor = isAdmin
+  const roleBadge = isStrictAdmin ? 'Admin' : isManager ? 'Manager' : 'Seller';
+  const roleColor = isStrictAdmin
     ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400'
     : isManager
     ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400'
@@ -129,8 +132,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             );
           })}
 
-          {/* Savings shortcut — shown if user has can_view_savings (manager with permission) */}
-          {!isAdmin && canViewSavings && (
+          {/* Savings shortcut — shown if non-admin user has can_view_savings (manager with permission) */}
+          {!isStrictAdmin && canViewSavings && (
             <Link href="/savings" onClick={onClose}
               className={cn('sidebar-link group', isActive('/savings') && 'active')}>
               <PiggyBank className={cn('w-[18px] h-[18px] flex-shrink-0 text-emerald-500')} />

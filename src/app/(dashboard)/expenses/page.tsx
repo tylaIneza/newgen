@@ -315,18 +315,16 @@ function ExpensesContent() {
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
-            {!isAdmin && (
-              <button onClick={openAdd} className="btn-primary">
-                <Plus className="w-4 h-4" /> Add Expense
-              </button>
-            )}
+            <button onClick={openAdd} className="btn-primary">
+              <Plus className="w-4 h-4" /> Add Expense
+            </button>
           </div>
 
           <div className="card overflow-hidden">
             {loading ? <LoadingSpinner /> : expenses.length === 0 ? (
               <EmptyState icon={DollarSign} title="No expenses found"
                 description="Record your first operational cost."
-                action={!isAdmin ? <button onClick={openAdd} className="btn-primary">Add Expense</button> : undefined} />
+                action={<button onClick={openAdd} className="btn-primary">Add Expense</button>} />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -367,12 +365,10 @@ function ExpensesContent() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1.5">
-                            {!isAdmin && (
-                              <button onClick={() => openEdit(e)} title="Edit / Request edit"
-                                className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-700 transition-colors">
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                            )}
+                            <button onClick={() => openEdit(e)} title="Edit / Request edit"
+                            className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-700 transition-colors">
+                            <Edit2 className="w-4 h-4" />
+                          </button>
                             {canApprove && (
                               <button onClick={() => handleDelete(e.id, e.title)} title="Delete"
                                 className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors">
