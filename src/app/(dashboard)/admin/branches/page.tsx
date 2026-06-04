@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 export default function BranchesPage() {
   const { user } = useAuth();
   // branch_id===null → super-admin; branch_id===undefined → old session, treat as admin until refreshed
-  const isSuperAdmin = user?.role === 'admin' && (user?.branch_id === null || user?.branch_id === undefined);
+  const isSuperAdmin = user?.role === 'admin';
 
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading]   = useState(true);

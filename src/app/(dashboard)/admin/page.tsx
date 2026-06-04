@@ -31,7 +31,7 @@ interface BranchStat {
 export default function AdminDashboard() {
   const { user: currentUser, hasPermission } = useAuth();
   const isStrictAdmin  = currentUser?.role === 'admin';
-  const isSuperAdmin   = currentUser?.role === 'admin' && (currentUser?.branch_id === null || currentUser?.branch_id === undefined);
+  const isSuperAdmin   = currentUser?.role === 'admin';
   const canSeeSavings  = isStrictAdmin || hasPermission('can_view_savings');
   const [data, setData] = useState<DashboardData | null>(null);
   const [branchStats, setBranchStats] = useState<BranchStat[]>([]);

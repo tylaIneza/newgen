@@ -8,7 +8,7 @@ const STORAGE_KEY = 'selected_branch_id';
 
 export function useBranch() {
   const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'admin' && (user?.branch_id === null || user?.branch_id === undefined);
+  const isSuperAdmin = user?.role === 'admin';
 
   const [branches, setBranches]       = useState<Branch[]>([]);
   const [selectedId, setSelectedId]   = useState<number | null>(null);
