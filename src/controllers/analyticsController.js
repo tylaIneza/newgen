@@ -23,11 +23,11 @@ exports.getDashboard = async (req, res) => {
       expenseBreakdown, lowStockProducts,
       stockStats, recentSales, sellerBreakdown, userAnalytics,
     ] = await Promise.all([
-      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales WHERE DATE(created_at) = CURDATE() ${bs}`),
+      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales WHERE DATE(created_at) = CURDATE() ${bRaw}`),
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE expense_date = CURDATE() AND from_savings = FALSE ${bRaw}`),
-      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) ${bs}`),
+      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) ${bRaw}`),
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE expense_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND from_savings = FALSE ${bRaw}`),
-      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales WHERE DATE(created_at) >= DATE_FORMAT(CURDATE(),'%Y-%m-01') ${bs}`),
+      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales WHERE DATE(created_at) >= DATE_FORMAT(CURDATE(),'%Y-%m-01') ${bRaw}`),
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE expense_date >= DATE_FORMAT(CURDATE(),'%Y-%m-01') AND from_savings = FALSE ${bRaw}`),
 
       prisma.$queryRawUnsafe(`
@@ -96,7 +96,7 @@ exports.getDashboard = async (req, res) => {
     ]);
 
     const [allTimeRevenue, allTimeExpenses, allTimeCapital, allTimeSavings, todaySavingRow, monthlySavingRow] = await Promise.all([
-      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales WHERE 1=1 ${bs}`),
+      prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(total_amount),0) as revenue, COUNT(*) as transactions FROM sales WHERE 1=1 ${bRaw}`),
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE from_savings=FALSE ${bRaw}`),
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM capital_injections WHERE 1=1 ${bSql(bid,'')}`),
       prisma.$queryRawUnsafe(`SELECT COALESCE(SUM(amount),0) as total FROM savings WHERE 1=1 ${bRaw}`),
