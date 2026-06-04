@@ -45,8 +45,8 @@ exports.create = async (req, res) => {
     res.status(201).json({ message: 'Branch created', branch });
   } catch (err) {
     if (err.code === 'P2002') return res.status(409).json({ error: 'Branch name already exists' });
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('[Branch create error]', err.message, err.code);
+    res.status(500).json({ error: err.message || 'Server error' });
   }
 };
 
