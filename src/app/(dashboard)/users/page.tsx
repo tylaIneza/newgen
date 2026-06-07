@@ -1,14 +1,14 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { usersApi, branchesApi } from '@/lib/api';
+import { usersApi } from '@/lib/api';
 import { formatDateTime } from '@/lib/utils';
-import type { User, Branch } from '@/types';
+import type { User } from '@/types';
 import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import toast from 'react-hot-toast';
-import { Plus, Edit2, Trash2, Users, CheckCircle, ShieldCheck, UserX, UserCheck, GitBranch } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, CheckCircle, ShieldCheck, UserX, UserCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const PERMISSIONS = [
@@ -22,26 +22,24 @@ const PERMISSIONS = [
 const ROLES = [
   { id: '2', label: 'Seller',  description: 'Can sell products and view own stats' },
   { id: '3', label: 'Manager', description: 'Can approve expenses, view reports, manage stock' },
-  { id: '1', label: 'Admin',   description: 'Full system access for their branch' },
+  { id: '1', label: 'Admin',   description: 'Full system access' },
 ];
 
 const emptyForm = {
   name: '', email: '', password: '', role_id: '2', phone: '',
-  permissions: [] as number[], branch_id: '',
+  permissions: [] as number[],
 };
 
 export default function UsersPage() {
   const { user: currentUser } = useAuth();
   const isStrictAdmin = currentUser?.role === 'admin';
-  const isSuperAdmin  = currentUser?.role === 'admin' && (currentUser?.branch_id === null || currentUser?.branch_id === undefined);
 
-  const [users,    setUsers]    = useState<User[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [modal,    setModal]    = useState<'add' | 'edit' | null>(null);
+  const [users,   setUsers]   = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modal,   setModal]   = useState<'add' | 'edit' | null>(null);
   const [selected, setSelected] = useState<any>(null);
-  const [form,     setForm]     = useState(emptyForm);
-  const [saving,   setSaving]   = useState(false);
+  const [form,    setForm]    = useState(emptyForm);
+  const [saving,  setSaving]  = useState(false);
 
   if (currentUser && !isStrictAdmin) {
     return <p className="text-center text-gray-500 py-20">Access denied.</p>;
@@ -50,12 +48,8 @@ export default function UsersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersRes, branchRes] = await Promise.all([
-        usersApi.getAll(),
-        branchesApi.getAll(),
-      ]);
-      setUsers(usersRes.data.users);
-      setBranches(branchRes.data.branches);
+      const res = await usersApi.getAll();
+      setUsers(res.data.users);
     } catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
   }, []);
@@ -63,8 +57,7 @@ export default function UsersPage() {
   useEffect(() => { load(); }, [load]);
 
   const openAdd = () => {
-    const defaultBranch = isSuperAdmin ? '' : String(currentUser?.branch_id ?? '');
-    setForm({ ...emptyForm, branch_id: defaultBranch });
+    setForm(emptyForm);
     setSelected(null);
     setModal('add');
   };
@@ -82,7 +75,6 @@ export default function UsersPage() {
         role_id:     String(user.role_id),
         phone:       user.phone || '',
         permissions: customPerms,
-        branch_id:   user.branch_id != null ? String(user.branch_id) : '',
       });
       setModal('edit');
     } catch { toast.error('Failed to load user'); }
@@ -101,16 +93,9 @@ export default function UsersPage() {
     if (!form.name || !form.email || (modal === 'add' && !form.password)) {
       toast.error('Name, email and password are required'); return;
     }
-    if (isSuperAdmin && !form.branch_id) {
-      toast.error('Please assign this user to a branch'); return;
-    }
     setSaving(true);
     try {
-      const payload: any = {
-        ...form,
-        role_id:   parseInt(form.role_id),
-        branch_id: form.branch_id ? parseInt(form.branch_id) : undefined,
-      };
+      const payload: any = { ...form, role_id: parseInt(form.role_id) };
       if (modal === 'add') {
         await usersApi.create(payload);
         toast.success('User created');
@@ -147,11 +132,6 @@ export default function UsersPage() {
     } catch (e: any) { toast.error(e?.response?.data?.error || 'Failed to delete user'); }
   };
 
-  const getBranchLabel = (id: number | null | undefined) => {
-    if (id === null || id === undefined) return 'Super Admin';
-    return branches.find(b => b.id === id)?.name || `Branch #${id}`;
-  };
-
   return (
     <div className="space-y-5">
       <div className="flex justify-end">
@@ -161,7 +141,7 @@ export default function UsersPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="stat-card">
           <div className="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
             <Users className="w-5 h-5 text-blue-700" />
@@ -180,15 +160,6 @@ export default function UsersPage() {
             <p className="text-2xl font-bold">{users.filter(u => u.is_active).length}</p>
           </div>
         </div>
-        <div className="stat-card">
-          <div className="w-11 h-11 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-            <GitBranch className="w-5 h-5 text-purple-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Branches</p>
-            <p className="text-2xl font-bold">{branches.filter(b => b.is_active).length}</p>
-          </div>
-        </div>
       </div>
 
       <div className="card overflow-hidden">
@@ -202,7 +173,6 @@ export default function UsersPage() {
                 <tr className="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-gray-800">
                   <th className="text-left px-4 py-3 font-medium">User</th>
                   <th className="text-left px-4 py-3 font-medium">Role</th>
-                  <th className="text-left px-4 py-3 font-medium">Branch</th>
                   <th className="text-left px-4 py-3 font-medium">Status</th>
                   <th className="text-left px-4 py-3 font-medium">Last Login</th>
                   <th className="text-center px-4 py-3 font-medium">Actions</th>
@@ -226,14 +196,6 @@ export default function UsersPage() {
                       <Badge variant={u.role === 'admin' ? 'purple' : u.role === 'manager' ? 'warning' : 'info'} className="capitalize">
                         {u.role}
                       </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <GitBranch className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                        <span className="text-gray-600 dark:text-gray-300 truncate max-w-[110px]">
-                          {getBranchLabel(u.branch_id)}
-                        </span>
-                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={u.is_active ? 'success' : 'danger'}>
@@ -305,36 +267,6 @@ export default function UsersPage() {
               <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
                 className="input" placeholder="+250 7XX XXX XXX" />
             </div>
-          </div>
-
-          {/* Branch assignment */}
-          <div>
-            <label className="label">Branch *</label>
-            {isSuperAdmin ? (
-              <select
-                value={form.branch_id}
-                onChange={e => setForm({ ...form, branch_id: e.target.value })}
-                className="input"
-              >
-                <option value="">— Select a branch —</option>
-                {branches.filter(b => b.is_active).map(b => (
-                  <option key={b.id} value={String(b.id)}>
-                    {b.name}{b.location ? ` — ${b.location}` : ''}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                className="input bg-gray-50 dark:bg-gray-800 cursor-not-allowed"
-                value={getBranchLabel(currentUser?.branch_id ?? null)}
-                disabled
-              />
-            )}
-            <p className="text-xs text-gray-400 mt-1">
-              {isSuperAdmin
-                ? 'The branch this user belongs to. They will only see data for that branch.'
-                : 'Users you create are automatically assigned to your branch.'}
-            </p>
           </div>
 
           {/* Role */}

@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingCart, Package, DollarSign,
   BarChart3, Users, ClipboardList, X, ChevronRight,
-  LogOut, CheckSquare, PiggyBank, Settings, GitBranch, Zap,
+  LogOut, CheckSquare, PiggyBank, Settings, Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,7 +21,6 @@ const adminLinks = [
   { href: '/savings',         icon: PiggyBank,       label: 'Daily Savings' },
   { href: '/analytics',       icon: BarChart3,       label: 'Analytics & Reports' },
   { href: '/users',           icon: Users,           label: 'User Management' },
-  { href: '/admin/branches',  icon: GitBranch,       label: 'Branches' },
   { href: '/audit',           icon: ClipboardList,   label: 'Audit Logs' },
   { href: '/settings',        icon: Settings,        label: 'Settings' },
 ];

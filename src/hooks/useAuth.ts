@@ -13,7 +13,6 @@ export function useAuth() {
     if (storedUser && token) {
       try {
         setUser(JSON.parse(storedUser));
-        // Refresh from server to pick up any changes (e.g. branch_id)
         authApi.me().then(({ data }) => {
           const fresh = { ...JSON.parse(storedUser), ...data.user };
           sessionStorage.setItem('user', JSON.stringify(fresh));

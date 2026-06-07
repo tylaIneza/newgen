@@ -8,11 +8,6 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
   if (token) config.headers.Authorization = `Bearer ${token}`;
-
-  // Send selected branch for super-admin context switching
-  const selectedBranch = typeof window !== 'undefined' ? localStorage.getItem('selected_branch_id') : null;
-  if (selectedBranch) config.headers['X-Branch-Id'] = selectedBranch;
-
   return config;
 });
 
@@ -86,7 +81,6 @@ export const expensesApi = {
 
 export const analyticsApi = {
   getDashboard:       ()             => api.get('/analytics/dashboard'),
-  getBranchesOverview:()             => api.get('/analytics/branches-overview'),
   getSellerDashboard: ()             => api.get('/analytics/seller-dashboard'),
   getReport:          (params?: object) => api.get('/analytics/report', { params }),
   getSellers:         ()             => api.get('/analytics/sellers'),
@@ -108,12 +102,6 @@ export const capitalApi = {
   remove: (id: number) => api.delete(`/capital/${id}`),
 };
 
-export const branchesApi = {
-  getAll:  () => api.get('/branches'),
-  create:  (data: { name: string; location?: string }) => api.post('/branches', data),
-  update:  (id: number, data: { name?: string; location?: string; is_active?: boolean }) => api.put(`/branches/${id}`, data),
-  remove:  (id: number) => api.delete(`/branches/${id}`),
-};
 
 export const settingsApi = {
   getRolePermissions:    () => api.get('/settings/role-permissions'),

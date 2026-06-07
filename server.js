@@ -26,9 +26,7 @@ const categoryRoutes = require('./src/routes/categories');
 const capitalRoutes  = require('./src/routes/capital');
 const savingsRoutes   = require('./src/routes/savings');
 const settingsRoutes  = require('./src/routes/settings');
-const branchRoutes    = require('./src/routes/branches');
 const { processDailySaving } = require('./src/controllers/savingsController');
-const prisma = require('./src/lib/prisma');
 
 nextApp.prepare().then(() => {
   const app = express();
@@ -76,7 +74,6 @@ nextApp.prepare().then(() => {
   app.use('/api/capital', capitalRoutes);
   app.use('/api/savings',   savingsRoutes);
   app.use('/api/settings',  settingsRoutes);
-  app.use('/api/branches',  branchRoutes);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -91,14 +88,11 @@ nextApp.prepare().then(() => {
 
   app.all('*', (req, res) => handle(req, res));
 
-  // Daily savings scheduler — runs for every active branch, once at startup, then every hour
+  // Daily savings scheduler — runs once at startup, then every hour
   async function scheduleDailySaving() {
     try {
-      const branches = await prisma.branch.findMany({ where: { is_active: true }, select: { id: true, name: true } });
-      for (const branch of branches) {
-        const { created } = await processDailySaving(branch.id);
-        if (created) console.log(`[Savings] Daily saving recorded for branch "${branch.name}"`);
-      }
+      const { created } = await processDailySaving(1);
+      if (created) console.log(`[Savings] Daily saving recorded`);
     } catch (e) {
       console.error('[Savings] Scheduler error:', e.message);
     }

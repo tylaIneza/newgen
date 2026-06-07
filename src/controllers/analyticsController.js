@@ -267,51 +267,6 @@ exports.getSellerDashboard = async (req, res) => {
   }
 };
 
-exports.getBranchesOverview = async (req, res) => {
-  try {
-    const rows = await prisma.$queryRaw`
-      SELECT
-        b.id, b.name, b.location,
-        COUNT(DISTINCT u.id)  AS user_count,
-        COUNT(DISTINCT p.id)  AS product_count,
-        COALESCE(SUM(CASE WHEN DATE(s.created_at) = CURDATE()                              THEN s.total_amount END), 0) AS today_revenue,
-        COUNT(CASE           WHEN DATE(s.created_at) = CURDATE()                           THEN s.id         END)      AS today_transactions,
-        COALESCE(SUM(CASE WHEN DATE(s.created_at) >= DATE_FORMAT(CURDATE(),'%Y-%m-01')    THEN s.total_amount END), 0) AS monthly_revenue,
-        COUNT(CASE           WHEN DATE(s.created_at) >= DATE_FORMAT(CURDATE(),'%Y-%m-01') THEN s.id         END)      AS monthly_transactions,
-        COALESCE((
-          SELECT SUM(e.amount) FROM expenses e
-          WHERE e.branch_id = b.id
-            AND e.expense_date >= DATE_FORMAT(CURDATE(),'%Y-%m-01')
-            AND e.from_savings = FALSE
-        ), 0) AS monthly_expenses
-      FROM branches b
-      LEFT JOIN users    u ON u.branch_id = b.id AND u.is_active = 1
-      LEFT JOIN products p ON p.branch_id = b.id AND p.is_active = 1
-      LEFT JOIN sales    s ON s.branch_id = b.id
-      WHERE b.is_active = 1
-      GROUP BY b.id, b.name, b.location
-      ORDER BY monthly_revenue DESC`;
-
-    res.json({
-      branches: rows.map(r => ({
-        id:                   r.id,
-        name:                 r.name,
-        location:             r.location,
-        user_count:           Number(r.user_count),
-        product_count:        Number(r.product_count),
-        today_revenue:        parseFloat(r.today_revenue),
-        today_transactions:   Number(r.today_transactions),
-        monthly_revenue:      parseFloat(r.monthly_revenue),
-        monthly_transactions: Number(r.monthly_transactions),
-        monthly_expenses:     parseFloat(r.monthly_expenses),
-        monthly_net:          parseFloat(r.monthly_revenue) - parseFloat(r.monthly_expenses),
-      })),
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-};
 
 exports.getSellers = async (req, res) => {
   try {
